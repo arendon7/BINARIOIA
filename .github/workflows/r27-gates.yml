@@ -1,0 +1,85 @@
+name: R27 development gates
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'fix/**', 'chore/**', 'release/**']
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate canonical development metadata
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          required = [
+              Path('config/development.json'),
+              Path('config/R26_SOURCE_BASELINE_MAP.json'),
+              Path('docs/BASELINE_R26.md'),
+              Path('docs/R27_DEVELOPMENT_LEDGER.md'),
+              Path('scripts/release_gate.py'),
+          ]
+          missing = [str(p) for p in required if not p.is_file()]
+          assert not missing, f'Missing governance files: {missing}'
+          data = json.loads(Path('config/development.json').read_text())
+          assert data.get('canonical_repository') == 'arendon7/BINARIOIA'
+          assert data.get('development_branch') == 'develop'
+          print('Governance PASS')
+          PY
+      - name: Compile repository gate scripts
+        run: python -m py_compile scripts/release_gate.py scripts/import_certified_baseline.py
+
+  source-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Detect whether full source is present
+        id: source
+        shell: bash
+        run: |
+          if [[ -d apps && -d common && -d hub && -d runtime && -d r26 && -d tests ]]; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+            echo 'R26 source tree not imported yet; release remains blocked by issue #4.'
+          fi
+      - name: Install pytest
+        if: steps.source.outputs.present == 'true'
+        run: python -m pip install --disable-pip-version-check -q pytest
+      - name: Run core/R27 tests when source exists
+        if: steps.source.outputs.present == 'true'
+        run: python -m pytest tests -q
+      - name: Verify twelve application source directories
+        if: steps.source.outputs.present == 'true'
+        run: python scripts/release_gate.py --repo .
+
+  release-fail-closed:
+    if: startsWith(github.ref, 'refs/tags/v') || startsWith(github.ref_name, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Full source is mandatory for a release
+        run: python scripts/release_gate.py --repo .
+      - name: Block releases while source-import blocker marker exists
+        run: |
+          test ! -f .release-blocked || { cat .release-blocked; exit 2; }
