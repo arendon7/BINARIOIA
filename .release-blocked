@@ -1,0 +1,11 @@
+R27 release bloqueado.
+
+Motivo: el árbol fuente R26 completo todavía no está importado físicamente en Git.
+Tracking: https://github.com/arendon7/BINARIOIA/issues/4
+
+No eliminar este archivo hasta que:
+- existan las 12 Apps en el repo,
+- common/hub/runtime/r26/tests/config estén presentes,
+- release_gate.py dé PASS,
+- regresión histórica y R27 den PASS,
+- se haga smoke Mac real de Hub, Video, FFmpeg y Whisper.
