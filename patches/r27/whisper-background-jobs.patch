@@ -1,0 +1,81 @@
+--- a/hub/server.py
++++ b/hub/server.py
+@@
+         if path=="/api/whisper/status":
+@@
+                 return self._json({"ready":False,"available":False,"nonfatal":True,"error":f"{type(exc).__name__}: {exc}"})
++        if path=="/api/whisper/job":
++            from runtime.whisper_jobs import get as whisper_job_get
++            return self._json(whisper_job_get(query.get("job_id") or None))
+@@
++            if path=="/api/whisper/job/start":
++                from runtime.whisper_jobs import start as whisper_job_start
++                return self._json(whisper_job_start(str(data.get("action") or "prepare"),str(data.get("model") or os.environ.get("BINARIO_WHISPER_MODEL","small"))),202)
+             if path=="/api/whisper/prepare":
+--- a/r26/r26_video_studio/server.py
++++ b/r26/r26_video_studio/server.py
+@@
+             if route == "/api/media-tools":
+                 return self._json(200, {**media_tools(), "transcription": transcription_status()})
++            if route == "/api/transcription/job":
++                from runtime.whisper_jobs import get as whisper_job_get
++                query = parse_qs(parsed.query)
++                job_id = (query.get("job_id") or [None])[-1]
++                return self._json(200, whisper_job_get(job_id))
+@@
++                if route == "/api/transcription/job/start":
++                    from runtime.whisper_jobs import start as whisper_job_start
++                    action = str(body.get("action") or "prepare")
++                    model = str(body.get("model") or "small")
++                    return self._json(202, whisper_job_start(action, model))
+                 if route == "/api/transcription/prepare":
+--- a/hub/ui/hub.html
++++ b/hub/ui/hub.html
+@@
+-async function repairWhisper(){/* synchronous prepare */}
++async function pollWhisperJob(id){
++  for(let i=0;i<720;i++){
++    let j=await get('/api/whisper/job?job_id='+encodeURIComponent(id));
++    $('repairWhisperBtn').textContent='Whisper '+Math.round(Number(j.progress||0))+'%';
++    $('whisperHint').textContent=j.message||('Preparando Whisper · '+(j.stage||'runtime'));
++    if(j.status==='done')return j;
++    if(j.status==='failed')throw Error(j.error||j.result?.error||j.message||'Falló Whisper');
++    await new Promise(r=>setTimeout(r,1000));
++  }
++  throw Error('La preparación de Whisper no terminó dentro del tiempo esperado');
++}
++async function repairWhisper(){
++  let b=$('repairWhisperBtn');b.disabled=true;b.textContent='Iniciando Whisper…';
++  $('whisperHint').textContent='Whisper se prepara en segundo plano; puedes seguir usando las demás herramientas.';
++  try{
++    let start=await post('/api/whisper/job/start',{action:'prepare',model:'small'});
++    let job=await pollWhisperJob(start.job_id);
++    let state=await get('/api/whisper/status');setWhisper(state);
++    if(job.message)$('whisperHint').textContent=job.message;
++  }catch(e){setWhisper({ready:false,error:e.message})}finally{b.disabled=false}
++}
+--- a/r26/r26_video_studio/video-studio.js
++++ b/r26/r26_video_studio/video-studio.js
+@@
+-  async function repairWhisper() { /* synchronous prepare */ }
++  async function pollWhisperJob(jobId) {
++    for (let attempt=0; attempt<720; attempt++) {
++      const job=await apiJson(`/api/transcription/job?job_id=${encodeURIComponent(jobId)}`);
++      const btn=$("repairWhisperBtn"), box=$("whisperHealth"), small=box?.querySelector("small");
++      if(btn) btn.textContent=`Whisper ${Math.round(Number(job.progress||0))}%`;
++      if(small) small.textContent=job.message||`Preparando Whisper · ${job.stage||"runtime"}`;
++      if(job.status==="done") return job;
++      if(job.status==="failed") throw new Error(job.error||job.result?.error||job.message||"Falló Whisper");
++      await new Promise(resolve=>setTimeout(resolve,1000));
++    }
++    throw new Error("La preparación de Whisper no terminó dentro del tiempo esperado");
++  }
++  async function repairWhisper() {
++    const btn=$("repairWhisperBtn"); if(btn){btn.disabled=true;btn.textContent="Iniciando Whisper…";}
++    toast("Whisper se preparará en segundo plano; puedes seguir editando mientras tanto.");
++    try {
++      const start=await apiJson("/api/transcription/job/start",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"prepare",model:"small"})});
++      const job=await pollWhisperJob(start.job_id);await refreshEngineStatus(false);toast(job.message||"Whisper quedó listo para transcribir");return true;
++    } catch(e){await refreshEngineStatus(false);toast(`Whisper necesita reparación: ${e.message}`,true);return false;}
++    finally{if(btn){btn.disabled=false;btn.textContent="Preparar / reparar Whisper";}}
++  }
