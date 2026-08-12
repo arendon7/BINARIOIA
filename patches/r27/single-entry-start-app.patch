@@ -1,0 +1,39 @@
+--- a/hub/server.py
++++ b/hub/server.py
+@@
+-    ap=argparse.ArgumentParser(); ap.add_argument("--port",type=int,default=8780,help="Puerto preferido; si está ocupado se usa otro automáticamente."); ap.add_argument("--no-browser",action="store_true"); ap.add_argument("--start-page",choices=["hub","runtime"],default="hub"); a=ap.parse_args()
++    ap=argparse.ArgumentParser(); ap.add_argument("--port",type=int,default=8780,help="Puerto preferido; si está ocupado se usa otro automáticamente."); ap.add_argument("--no-browser",action="store_true"); ap.add_argument("--start-page",choices=["hub","runtime","projects","ai","health"],default="hub"); ap.add_argument("--start-app",default="",help="ID de App canónica para abrir después de iniciar el Hub."); a=ap.parse_args()
+@@
+-    open_url=url if a.start_page=="hub" else url+"runtime"
++    page_routes={"hub":"","runtime":"runtime","projects":"projects","ai":"ai","health":"health"}
++    open_url=url+page_routes[a.start_page]
+@@
+     if reuse:
+         print(f"Binario IA v0.25.1-a1 ya está activo: {url}")
+-        if not a.no_browser: webbrowser.open(open_url)
++        if a.start_app:
++            try:
++                req=Request(url+"api/launch/"+a.start_app,data=b"{}",headers={"Content-Type":"application/json"},method="POST")
++                with urlopen(req,timeout=12) as response: target=json.loads(response.read().decode("utf-8")).get("url")
++                if target and not a.no_browser: webbrowser.open(target)
++                print(f"App {a.start_app}: {target or 'sin URL'}")
++            except Exception as exc:
++                print(f"No se pudo abrir {a.start_app}: {type(exc).__name__}: {exc}")
++                if not a.no_browser: webbrowser.open(open_url)
++        elif not a.no_browser: webbrowser.open(open_url)
+         return
+@@
+-    if not a.no_browser: threading.Timer(.7,lambda:webbrowser.open(open_url)).start()
++    if a.start_app:
++        def _open_requested_app():
++            try:
++                app=app_by_id(a.start_app)
++                if not app: raise RuntimeError(f"App desconocida: {a.start_app}")
++                target=launch_service(app) if app.get("special_service") else url+"app?id="+quote(app["id"],safe="")
++                print(f"App {a.start_app}: {target}")
++                if not a.no_browser: webbrowser.open(target)
++            except Exception as exc:
++                print(f"No se pudo abrir {a.start_app}: {type(exc).__name__}: {exc}")
++                if not a.no_browser: webbrowser.open(open_url)
++        threading.Timer(.7,_open_requested_app).start()
++    elif not a.no_browser: threading.Timer(.7,lambda:webbrowser.open(open_url)).start()
