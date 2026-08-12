@@ -2,7 +2,8 @@
   "use strict";
   const parts = [
     "video-studio.part01.js.txt","video-studio.part02.js.txt","video-studio.part03.js.txt","video-studio.part04.js.txt",
-    "video-studio.part05.js.txt","video-studio.part06.js.txt","video-studio.part07.js.txt","video-studio.part08.js.txt"
+    "video-studio.part05.js.txt","video-studio.part06.js.txt","video-studio.part07a.js.txt","video-studio.part07b.js.txt",
+    "video-studio.part07c.js.txt","video-studio.part08.js.txt"
   ];
   Promise.all(parts.map(async name => {
     const response = await fetch(name, {cache:"no-store"});
