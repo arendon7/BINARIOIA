@@ -5,7 +5,7 @@ import time
 import uuid
 from typing import Any
 
-from runtime.whisper_gateway import prepare, repair, status
+from runtime.whisper_gateway import prepare, repair, self_test, status
 
 _LOCK = threading.RLock()
 _JOBS: dict[str, dict[str, Any]] = {}
@@ -13,7 +13,7 @@ _LATEST: str | None = None
 
 
 def _public(job: dict[str, Any]) -> dict[str, Any]:
-    return {k: v for k, v in job.items() if not k.startswith("_")}
+    return {k: v for k, v in job.items() if not k.startswith('_')}
 
 
 def get(job_id: str | None = None) -> dict[str, Any]:
@@ -27,20 +27,15 @@ def get(job_id: str | None = None) -> dict[str, Any]:
 def start(action: str = "prepare", model: str = "small") -> dict[str, Any]:
     global _LATEST
     action = str(action or "prepare").strip().lower()
-    if action not in {"prepare", "repair"}:
-        raise ValueError("action must be prepare or repair")
+    if action not in {"prepare", "repair", "self-test"}:
+        raise ValueError("action must be prepare, repair or self-test")
     model = str(model or "small").strip() or "small"
     with _LOCK:
         if _LATEST and _LATEST in _JOBS and _JOBS[_LATEST].get("status") in {"queued", "running"}:
             return _public(dict(_JOBS[_LATEST]))
         job_id = f"whisper-{uuid.uuid4().hex[:12]}"
         now = time.time()
-        job = {
-            "ok": True, "job_id": job_id, "action": action, "model": model,
-            "status": "queued", "stage": "queued", "progress": 2,
-            "message": "Preparación de Whisper en cola", "started_at": now,
-            "updated_at": now, "result": None, "error": None,
-        }
+        job = {"ok": True, "job_id": job_id, "action": action, "model": model, "status": "queued", "stage": "queued", "progress": 2, "message": "Preparación de Whisper en cola", "started_at": now, "updated_at": now, "result": None, "error": None}
         _JOBS[job_id] = job
         _LATEST = job_id
 
@@ -62,9 +57,15 @@ def start(action: str = "prepare", model: str = "small") -> dict[str, Any]:
                 update(stage="model", progress=35, message="Preparando modelo Whisper")
             else:
                 update(stage="runtime", progress=20, message="Reparando runtime nativo de Whisper")
-            result = repair(model) if action == "repair" else prepare(model)
+            if action == "self-test":
+                update(stage="self-test", progress=55, message="Generando audio de prueba y transcribiendo")
+                result = self_test(model)
+                success_message = "Auto-prueba Whisper OK" + ((" · " + str(result.get("transcript"))) if result.get("transcript") else "")
+            else:
+                result = repair(model) if action == "repair" else prepare(model)
+                success_message = "Whisper listo para transcribir"
             if result.get("ok"):
-                update(status="done", stage="ready", progress=100, message="Whisper listo para transcribir", result=result)
+                update(status="done", stage="ready", progress=100, message=success_message, result=result)
             else:
                 update(status="failed", stage=str(result.get("stage") or "failed"), progress=100, message="Whisper no pudo quedar listo", result=result, error=str(result.get("error") or result))
         except Exception as exc:
