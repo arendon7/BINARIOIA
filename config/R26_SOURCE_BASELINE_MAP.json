@@ -1,0 +1,28 @@
+{
+  "schema": "sbia-source-baseline-map-1.0",
+  "baseline": "R26 FULL MAC",
+  "artifact_sha256": "87b36e06e896fbbb07309e9947a4113771515cb534cfa6e525446b7a21f97c46",
+  "sections": {
+    "apps": {"files": 1470, "bytes": 12925973, "tree_sha256": "6cce4feecde4e36015bc36fa4a6870ceed6ce0f803c31083257c51156683b608"},
+    "common": {"files": 44, "bytes": 348065, "tree_sha256": "51a699df9364db57ce8c9415f85ec780dca6428bc6e33d87eb825473b1c22528"},
+    "hub": {"files": 27, "bytes": 248512, "tree_sha256": "e6a369d742f1a61b36e969feb6a90ac464bf49fb2318fa5a222516609ee88933"},
+    "runtime": {"files": 15, "bytes": 54269, "tree_sha256": "54bd0d8fd5563eae881bd64f0e9c12c98b2ff794124d5da65cf4c7a8148189ad"},
+    "r26": {"files": 79, "bytes": 451336, "tree_sha256": "a6d8b9ad95cecf747921c4f0159dba7bbe952701d6d70a7a8987c29dade86ddf"},
+    "scripts": {"files": 5, "bytes": 28298, "tree_sha256": "40bc870aa826b8334023d5080b6f3cd99dab63ad2fbd44c38cfe81c78753a1cc"},
+    "tests": {"files": 35, "bytes": 215344, "tree_sha256": "280fee9bd6dea1618d65f54ab7c1eb837a9ad1175d3ccbfa9a3c90e4b6ee18fe"}
+  },
+  "apps": {
+    "01_auditoria_negocio": {"files": 62, "bytes": 457674, "tree_sha256": "dda505f7073bd554204cdef87a0cde4421857e81ef546175293bb8b3b14abdad"},
+    "02_cazador_webs": {"files": 62, "bytes": 446813, "tree_sha256": "8c8e833edddc61049b1711a491a491b7ca1fbf07f05a7a3e821154ddfcd445e5"},
+    "03_agente_ia_whatsapp": {"files": 64, "bytes": 469067, "tree_sha256": "c6b347e5be371a811f2347f2ad89c4200ffb72bc1a08c5e55fd308b888825ee3"},
+    "04_auditoria_youtube": {"files": 63, "bytes": 442857, "tree_sha256": "46876c58bd1ffe7705ef328587dd648caf10215dfa7a699c2b2779fca4a9bdfb"},
+    "05_editor_video_ia": {"files": 166, "bytes": 5198737, "tree_sha256": "20731cfc4fd6af699d1821ba9738d2b49e8e33acedc041be337e6aeb9b35e513"},
+    "06_auditoria_marca_personal": {"files": 63, "bytes": 441243, "tree_sha256": "b6109f90fc0b35501ebcb1c291da1e9cb28e92daa561483decbfe523d2497a3e"},
+    "07_auditoria_ecommerce": {"files": 63, "bytes": 443857, "tree_sha256": "7aeda14f578cb54c87773d379af60f3f270e53f484bc4d52d0f5f98ea8c6f348"},
+    "08_creador_kits": {"files": 67, "bytes": 460054, "tree_sha256": "7e67eeb76c3c2323d06997654b3fb26d61a100af97cf935663c65fce1581b9ad"},
+    "09_propuestas_ia": {"files": 64, "bytes": 442013, "tree_sha256": "e918976253866f9418df18495bea3561a8d5ac05f670ce6b5ef20df194d3b70f"},
+    "10_investigador_ia": {"files": 67, "bytes": 441206, "tree_sha256": "00026f2b262bb6056613b658de2551ec8f60aa0d6675f6f081f5ffb504d12c79"},
+    "11_documentos_ia": {"files": 48, "bytes": 1311105, "tree_sha256": "23fdb92d6214a1656ef97269bb757b615ccefe433adb05b6b15cf48f96d41b6d"},
+    "12_app_factory_ia": {"files": 681, "bytes": 2371347, "tree_sha256": "68004dfac1aadaab88a1f0a9311a96c495b325afd49baa344973e80047c09823"}
+  }
+}
