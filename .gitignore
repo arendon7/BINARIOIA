@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# Runtime/user state
+platform_r26/
+*.log
+runtime-state.json
+runtime-fingerprint.json
+
+# User projects never belong in source control
+Projects/
+Workspaces/
+
+# Release/install artifacts are produced only after certification
+*.zip
+*.dmg
+*.pkg
+
+# Generated validation reports
+VALIDACION_*.json
+*_EXACT_VALIDATION*.json
+*_SHA256.txt
