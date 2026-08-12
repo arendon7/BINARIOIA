@@ -1,0 +1,10 @@
+--- a/hub/server.py
++++ b/hub/server.py
+@@
+-    ap.add_argument("--start-page",choices=["hub","runtime"],default="hub")
++    ap.add_argument("--start-page",choices=["hub","runtime","projects","ai","health","knowledge","versions"],default="hub")
++    ap.add_argument("--start-app",default="",help="ID de App canónica para abrir después de iniciar el Hub.")
+@@
+-    open_url=url if a.start_page=="hub" else url+"runtime"
++    page_routes={"hub":"","runtime":"runtime","projects":"projects","ai":"ai","health":"health","knowledge":"knowledge","versions":"versions"}
++    open_url=url+page_routes[a.start_page]
