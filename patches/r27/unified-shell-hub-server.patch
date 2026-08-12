@@ -1,0 +1,81 @@
+--- a/hub/server.py
++++ b/hub/server.py
+@@ -2,7 +2,7 @@
+ from __future__ import annotations
+ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+ from pathlib import Path
+-from urllib.parse import urlparse, unquote, parse_qs
++from urllib.parse import urlparse, unquote, parse_qs, quote
+ from urllib.request import urlopen, Request
+ import importlib.util, json, mimetypes, os, shutil, socket, subprocess, sys, threading, time, webbrowser
+ from common.ports import choose_port, record, service_matches, services_state, stop_app_services
+@@ -107,7 +107,7 @@
+                 return False
+             text=r.read(12000).decode("utf-8","ignore")
+         if app["id"]=="05-editor-video-ia":
+-            markers=["Editor Video IA", "Sistema Binario · Editor Video"]
++            markers=["Video Studio", "Editor Video IA", "Sistema Binario · Editor Video"]
+@@ -155,7 +155,11 @@
+     app_dir=Path(app["_dir"])
+     module=special["module"]
+-    if app["id"]=="05-editor-video-ia":
++    use_r26_video = app["id"]=="05-editor-video-ia" and (ROOT/"r26/r26_video_studio/server.py").exists()
++    if use_r26_video:
++        projects_root=Path(os.environ.get("BINARIO_PROJECTS_ROOT",str(Path.home()/"Documents"/"Binario IA"/"Projects"))).expanduser()
++        cmd=[sys.executable,"-m","r26.r26_video_studio.server","--projects-root",str(projects_root),"--host","127.0.0.1","--port",str(port)]
++    elif app["id"]=="05-editor-video-ia":
+         cmd=[sys.executable,"-m",module,str(ensure_video_project()),"--port",str(port),"--no-browser"]
+@@ -164,19 +168,26 @@
+-    env=process_env(app_dir); env["BINARIO_SERVICE_ID"]=sid
++    env=process_env((ROOT/"r26") if use_r26_video else app_dir); env["BINARIO_SERVICE_ID"]=sid
++    if use_r26_video:
++        env["PYTHONPATH"]=":".join([str(ROOT),str(ROOT/"r26"),env.get("PYTHONPATH","")])
++        env["BINARIO_PROJECTS_ROOT"]=str(Path(os.environ.get("BINARIO_PROJECTS_ROOT",str(Path.home()/"Documents"/"Binario IA"/"Projects"))).expanduser())
+@@ -174,12 +185,16 @@
+-    proc=subprocess.Popen(cmd,cwd=str(app_dir),env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
++    proc=subprocess.Popen(cmd,cwd=str(ROOT if use_r26_video else app_dir),env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+@@ -180,7 +195,11 @@
+-            return f"http://127.0.0.1:{port}/?from=hub&release=0.25.1-a1"
++            base=f"http://127.0.0.1:{port}/"
++            if use_r26_video:
++                hub=os.environ.get("BINARIO_HUB_URL","")
++                return base+f"?from=hub&mode=simple&hub={quote(hub,safe='')}"
++            return base+"?from=hub&release=0.25.1-a1"
+@@ -277,7 +296,17 @@
+-        if path=="/api/health": return self._json({"service_id":"binario-hub-v0251a1","release":"0.25.1-a1 R25 Product Reconciliation + Social Clipper","root":str(ROOT)})
++        if path=="/api/health": return self._json({"service_id":"binario-hub-v0251a1","release":"0.25.1-a1 R25 Product Reconciliation + Social Clipper","development_cycle":"R27-dev","root":str(ROOT)})
++        if path=="/api/whisper/status":
++            try:
++                from runtime.whisper_gateway import status as whisper_status
++                return self._json(whisper_status(os.environ.get("BINARIO_WHISPER_MODEL","small")))
++            except Exception as exc:
++                return self._json({"ready":False,"available":False,"nonfatal":True,"error":f"{type(exc).__name__}: {exc}"})
++        if path=="/api/projects/root":
++            root=Path(os.environ.get("BINARIO_PROJECTS_ROOT") or os.environ.get("BINARIO_PROJECTS_HOME") or str(Path.home()/"Documents"/"Binario IA"/"Projects")).expanduser().resolve()
++            root.mkdir(parents=True,exist_ok=True)
++            return self._json({"root":str(root),"exists":root.exists(),"canonical":True})
+@@ -766,6 +795,30 @@
++            if path=="/api/whisper/prepare":
++                from runtime.whisper_gateway import prepare as whisper_prepare
++                return self._json(whisper_prepare(str(data.get("model") or os.environ.get("BINARIO_WHISPER_MODEL","small"))))
++            if path=="/api/whisper/repair":
++                from runtime.whisper_gateway import repair as whisper_repair
++                return self._json(whisper_repair(str(data.get("model") or os.environ.get("BINARIO_WHISPER_MODEL","small"))))
++            if path=="/api/open-projects-root":
++                projects=Path(os.environ.get("BINARIO_PROJECTS_ROOT") or os.environ.get("BINARIO_PROJECTS_HOME") or str(Path.home()/"Documents"/"Binario IA"/"Projects")).expanduser().resolve()
++                projects.mkdir(parents=True,exist_ok=True)
++                if sys.platform=="darwin":
++                    rc=subprocess.run(["open",str(projects)],check=False).returncode
++                    return self._json({"status":"ok" if rc==0 else "failed","path":str(projects)})
++                return self._json({"status":"unsupported","path":str(projects)})
++            if path=="/api/projects/open-folder":
++                from common.project_center import get as project_get
++                row=project_get(str(data.get("project_id") or ""))
++                if not row:return self._json({"error":"Proyecto no encontrado"},404)
++                projects=Path(os.environ.get("BINARIO_PROJECTS_ROOT") or os.environ.get("BINARIO_PROJECTS_HOME") or str(Path.home()/"Documents"/"Binario IA"/"Projects")).expanduser().resolve()
++                target=Path(str((row.get("metadata") or {}).get("project_path") or projects)).expanduser().resolve()
++                if target!=projects and projects not in target.parents:return self._json({"error":"Ruta de proyecto inválida"},400)
++                if sys.platform=="darwin":
++                    rc=subprocess.run(["open",str(target)],check=False).returncode
++                    return self._json({"status":"ok" if rc==0 else "failed","path":str(target)})
++                return self._json({"status":"unsupported","path":str(target)})
