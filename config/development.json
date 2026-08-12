@@ -1,0 +1,26 @@
+{
+  "schema": "sbia-development-cycle-1.0",
+  "cycle": "R27",
+  "status": "active",
+  "stable_baseline": {
+    "version": "0.26.0",
+    "artifact": "BINARIO_IA_v0.26.0_R26_FULL_MAC.zip",
+    "sha256": "87b36e06e896fbbb07309e9947a4113771515cb534cfa6e525446b7a21f97c46"
+  },
+  "branches": {
+    "stable": "main",
+    "integration": "develop",
+    "baseline": "chore/r27-repo-baseline",
+    "ux": "feature/r27-unified-shell-video-ux",
+    "whisper": "fix/r27-whisper-runtime"
+  },
+  "gates": [
+    "historical contracts preserved",
+    "12 apps remain discoverable",
+    "Video Studio reachable from canonical Hub",
+    "simple mode persistent and complete",
+    "Whisper native runtime architecture verified",
+    "projects physically recoverable",
+    "no downloadable release before full certification"
+  ]
+}
