@@ -90,11 +90,15 @@ def status(model: str = "small") -> dict[str, Any]:
     worker_arch = _normalize_arch(str(result.get("machine") or ""))
     hardware = hardware_architecture()
     arch_ok = not (sys.platform == "darwin" and hardware in {"arm64", "x86_64"} and worker_arch not in {hardware, "unknown"})
-    ready = bool(result.get("ok") and arch_ok)
+    runtime_ok = bool(result.get("ok") and arch_ok)
+    model_cached = bool(result.get("model_cached"))
+    ready = bool(runtime_ok and model_cached)
     return {
-        "available": ready,
+        "available": runtime_ok,
+        "runtime_ok": runtime_ok,
+        "model_cached": model_cached,
         "ready": ready,
-        "mode": "isolated_runtime_worker" if ready else "needs_repair",
+        "mode": "isolated_runtime_worker" if ready else ("needs_model_prepare" if runtime_ok else "needs_repair"),
         "runtime_python": py,
         "runtime_machine": worker_arch,
         "hardware_arch": hardware,
@@ -124,20 +128,26 @@ def repair(model: str = "small") -> dict[str, Any]:
 
 def prepare(model: str = "small") -> dict[str, Any]:
     current = status(model)
-    if not current.get("ready"):
+    if not current.get("runtime_ok"):
         return repair(model)
+    if current.get("model_cached"):
+        return {"ok": True, "stage": "ready", "prepare": {"ok": True, "model": model, "prepared": True, "cached": True}, "status": current}
     result = _run_worker("prepare", model=model, timeout=3600)
-    return {"ok": bool(result.get("ok")), "prepare": result, "status": status(model)}
+    return {"ok": bool(result.get("ok")), "stage": "prepare", "prepare": result, "status": status(model)}
 
 
 def transcribe(input_path: Path, output_path: Path, *, model: str = "small", language: str | None = None) -> list[dict[str, Any]]:
     input_path = Path(input_path).expanduser().resolve()
     output_path = Path(output_path).expanduser().resolve()
     current = status(model)
-    if not current.get("ready"):
+    if not current.get("runtime_ok"):
         fixed = repair(model)
         if not fixed.get("ok"):
             raise RuntimeError("Whisper runtime no está listo: " + str(fixed.get("error") or fixed))
+    elif not current.get("model_cached"):
+        prepared = prepare(model)
+        if not prepared.get("ok"):
+            raise RuntimeError("Whisper no pudo preparar el modelo: " + str(prepared.get("error") or prepared))
     result = _run_worker("transcribe", model=model, input_path=input_path, output_path=output_path, language=language, timeout=7200)
     if not result.get("ok"):
         raise RuntimeError(str(result.get("error") or "Whisper transcription failed"))
