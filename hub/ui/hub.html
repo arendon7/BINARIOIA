@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Binario IA · Inicio</title><link rel="stylesheet" href="/assets/style.css"></head>
+<body><main class="shell home-shell">
+<header class="top home-top">
+  <div class="brand"><div class="mark">SB</div><div><div class="eyebrow">Sistema Binario</div><h1>Binario IA <span class="stable-badge">v0.25.1-a1 · Reconciliation</span><span class="dev-badge">R27 en desarrollo</span></h1><div class="muted">Un solo inicio para proyectos, herramientas y archivos.</div></div></div>
+  <nav class="actions home-nav"><a class="btn primary" href="/projects">Proyectos</a><button class="btn video-nav" onclick="openByNumber(5)">Video Studio</button><a class="btn" href="/ai">IA y modelos</a><a class="btn" href="/health">Salud</a><details class="more-menu"><summary class="btn">Avanzado</summary><div class="more-menu-pop"><a href="/workspaces">Workspaces</a><a href="/workflow">Procesos</a><a href="/decision-center">Atención</a><a href="/knowledge">Knowledge</a><a href="/runs">Runs</a><a href="/runtime">Runtime</a><a href="/versions">Versiones</a><a href="/product-audit">Auditoría de producto</a><button onclick="post('/api/open-vscode')">Abrir en VS Code</button></div></details></nav>
+</header>
+
+<section class="start-grid">
+  <div class="start-main">
+    <div class="eyebrow">Inicio</div><h2>¿Qué quieres hacer?</h2><p class="muted start-lead">Elige una acción. Binario IA abre la herramienta correcta y conserva el trabajo en tu carpeta de proyectos.</p>
+    <div class="start-actions">
+      <button class="start-card video-start" onclick="openByNumber(5)"><span class="start-icon">◆</span><span><b>Editar video</b><small>Video largo, clips sociales, Whisper, timeline y render.</small></span><em>→</em></button>
+      <button class="start-card" onclick="location.href='/projects'"><span class="start-icon">◫</span><span><b>Abrir o continuar un proyecto</b><small>Encuentra trabajo anterior y vuelve exactamente donde estabas.</small></span><em>→</em></button>
+    </div>
+    <div class="quick-row"><button onclick="openByNumber(11)">▤ Documento</button><button onclick="openByNumber(3)">◎ Agente IA</button><button onclick="openByNumber(10)">⌁ Investigar</button><button onclick="openByNumber(12)">⚙ Crear App</button><a href="#apps">Ver las 12 Apps ↓</a></div>
+  </div>
+  <aside class="system-card home-status">
+    <div class="system-head"><span class="status-dot" id="systemDot"></span><div><b id="systemTitle">Comprobando Binario IA</b><small id="systemText">Apps, proyectos y runtime</small></div></div>
+    <div class="home-health-list">
+      <div><span>Apps</span><b id="appsCount">—</b></div>
+      <div><span>Whisper</span><b id="whisperState">Comprobando…</b></div>
+      <div><span>Proyectos</span><b id="projectsCount">—</b></div>
+    </div>
+    <div id="whisperHint" class="mini-status muted">La transcripción se ejecuta en un runtime nativo aislado.</div>
+    <div class="status-actions"><button class="btn full primary" id="repairWhisperBtn" onclick="repairWhisper()">Preparar / reparar Whisper</button><a class="btn full" href="/health">Diagnóstico completo</a></div>
+  </aside>
+</section>
+
+<section class="save-location"><div><div class="eyebrow">Dónde queda tu trabajo</div><b id="projectsRoot">~/Documents/Binario IA/Projects</b><span>Videos, recursos, autosaves, exportaciones y entrenamiento se conservan fuera de la aplicación.</span></div><button class="btn" onclick="openProjectsRoot()">Abrir en Finder</button></section>
+
+<section class="section"><div class="section-head"><div><div class="eyebrow">Continuar</div><h2>Proyectos recientes</h2></div><a class="btn" href="/projects">Ver todos</a></div><div id="recentProjects" class="recent-projects"><div class="skeleton project-skeleton"></div><div class="skeleton project-skeleton"></div><div class="skeleton project-skeleton"></div></div></section>
+
+<section class="section" id="apps"><div class="section-head"><div><div class="eyebrow">Herramientas</div><h2>Las 12 Apps</h2><p class="muted">Busca por objetivo; Video Studio es ahora el editor canónico de APP 05.</p></div><div class="filters"><button class="filter active" data-filter="all">Todas</button><button class="filter" data-filter="crear">Crear</button><button class="filter" data-filter="analizar">Analizar</button><button class="filter" data-filter="investigar">Investigar</button></div></div><div id="groups"><div class="loading-card">Cargando Apps…</div></div></section>
+
+<section class="system-strip"><div><b>¿Necesitas control avanzado?</b><span class="muted"> Workspaces, procesos, memoria, costos y handoffs siguen disponibles sin contaminar el inicio.</span></div><div class="actions"><a class="btn" href="/workspaces">Workspaces</a><a class="btn" href="/workflow">Procesos</a><a class="btn" href="/knowledge">Knowledge</a><a class="btn" href="/runtime">Runtime</a></div></section>
+</main>
+<script>
+let APPS=[],PROJECTS=[];const $=id=>document.getElementById(id);
+async function get(u){let r=await fetch(u,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status} · ${u}`);return r.json()}
+async function post(u,b={}){let r=await fetch(u,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});let j=await r.json();if(!r.ok||j.error)throw new Error(j.error||j.friendly?.message||`HTTP ${r.status}`);return j}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function icon(a){return({1:'◫',2:'⌕',3:'◎',4:'▶',5:'◆',6:'✦',7:'▦',8:'⊞',9:'✎',10:'⌁',11:'▤',12:'⚙'})[a?.number]||'◇'}
+function objective(a){if([5,11,12,9,8].includes(a.number))return'crear';if([1,2,4,6,7].includes(a.number))return'analizar';return'investigar'}
+async function openApp(a,payload={}){if(!a)return;if(a.special_service){let r=await post('/api/launch/'+encodeURIComponent(a.id),payload);if(r.url){if(a.id==='05-editor-video-ia')location.href=r.url;else{let w=window.open(r.url,'_blank','noopener');if(!w)location.href=r.url}}}else location.href='/app?id='+encodeURIComponent(a.id)+(payload.project_id?'&project='+encodeURIComponent(payload.project_id):'')}
+function openById(id){return openApp(APPS.find(x=>x.id===id))}function openByNumber(n){return openApp(APPS.find(x=>x.number===n))}
+function openProject(p){let a=APPS.find(x=>x.id===p.app_id);return openApp(a,{project_id:p.id})}
+function render(filter='all'){let visible=filter==='all'?APPS:APPS.filter(a=>objective(a)===filter),cats=[['crear','Crear'],['analizar','Analizar y mejorar'],['investigar','Investigar y automatizar']];$('groups').innerHTML=cats.map(([key,title])=>{let rows=visible.filter(a=>objective(a)===key);if(!rows.length)return'';return `<div class="app-group"><h3>${title}</h3><div class="app-grid">${rows.map(a=>`<article class="app-card ${a.number===5?'canonical-video':''}"><div class="app-icon">${icon(a)}</div><div class="app-copy"><div class="app-kicker">APP ${String(a.number).padStart(2,'0')} · ${esc(a.category||'IA')}${a.number===5?' · EDITOR PRINCIPAL':''}</div><h4>${esc(a.name)}</h4><p>${a.number===5?'Video Studio R26/R27: timeline, clips, Whisper y render en un solo flujo.':esc(a.description||'Herramienta local Binario IA.')}</p></div><div class="row between" style="align-items:center"><span class="muted" style="font-size:11px">${esc(a.release||a.version||'')}</span><button class="open" onclick="openById('${a.id}')">Abrir →</button></div></article>`).join('')}</div></div>`}).join('')||'<div class="loading-card">No hay herramientas para este filtro.</div>'}
+function renderRecent(){let rows=PROJECTS.filter(p=>p.status!=='archived').slice(0,3);$('recentProjects').innerHTML=rows.length?rows.map(p=>{let a=APPS.find(x=>x.id===p.app_id)||{};return `<article class="recent-card"><div class="app-kicker">${esc(a.name||p.app_id||'Proyecto')}</div><h3>${esc(p.name)}</h3><p class="muted">${esc((p.updated_at||'').replace('T',' ').slice(0,16))||'Sin fecha'} · ${p.run_ids?.length||0} ejecuciones</p><button class="btn primary" onclick='openProject(${JSON.stringify(p).replace(/'/g,"&#39;")})'>Continuar</button></article>`}).join(''):'<div class="empty-recent"><b>Aún no hay proyectos.</b><span>Crea el primero para que Binario IA recuerde dónde continuar.</span><a class="btn primary" href="/projects">Crear proyecto</a></div>'}
+function setSystem(h){$('appsCount').textContent=(h?.apps?.ok??APPS.length)+'/'+(h?.apps?.total??APPS.length);$('projectsCount').textContent=String(PROJECTS.filter(p=>p.status!=='archived').length);let ok=h?.status==='healthy'||h?.status==='warning';$('systemDot').className='status-dot '+(h?.status==='healthy'?'ok':'warn');$('systemTitle').textContent=h?.status==='healthy'?'Sistema listo':h?.status==='blocked'?'Requiere reparación':'Listo con avisos';$('systemText').textContent=(h?.warnings||[]).length?'Avisos: '+h.warnings.join(', '):'Inicio, Apps y almacenamiento comprobados'}
+function setWhisper(w){let ready=!!w?.ready;$('whisperState').textContent=ready?'Listo':'Reparar';$('whisperState').className=ready?'ok':'warn';$('whisperHint').textContent=ready?`Runtime ${w.runtime_machine||''} · modelo ${w.model||'small'} · listo para transcribir`:(w?.error?`No listo: ${String(w.error).slice(0,130)}`:'Pulsa Preparar / reparar Whisper. El editor seguirá funcionando aunque falle la transcripción.');$('repairWhisperBtn').textContent=ready?'Verificar Whisper':'Preparar / reparar Whisper'}
+async function repairWhisper(){let b=$('repairWhisperBtn');b.disabled=true;b.textContent='Preparando Whisper…';$('whisperHint').textContent='Verificando arquitectura, paquetes y modelo. La primera preparación puede descargar el modelo.';try{let r=await post('/api/whisper/prepare',{model:'small'});setWhisper(r.status||r)}catch(e){setWhisper({ready:false,error:e.message})}finally{b.disabled=false}}
+async function openProjectsRoot(){try{let r=await post('/api/open-projects-root');if(r.status!=='ok'&&r.status!=='unsupported')throw Error('No se pudo abrir Finder')}catch(e){alert(e.message)}}
+async function boot(){try{let [apps,st,projects,root]=await Promise.all([get('/api/apps'),get('/api/system/health'),get('/api/projects'),get('/api/projects/root')]);APPS=apps;PROJECTS=projects;$('projectsRoot').textContent=root.root||'~/Documents/Binario IA/Projects';setSystem(st);renderRecent();render();get('/api/whisper/status').then(setWhisper).catch(e=>setWhisper({ready:false,error:e.message}))}catch(e){$('groups').innerHTML=`<div class="error-card"><b>No se pudo cargar el Inicio.</b><p>${esc(e.message)}</p><a class="btn" href="/runtime">Abrir Runtime Center</a></div>`;$('recentProjects').innerHTML='';$('systemTitle').textContent='Binario IA necesita revisión';$('systemText').textContent=e.message;$('systemDot').className='status-dot warn'}}
+document.querySelectorAll('.filter').forEach(b=>b.onclick=()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');render(b.dataset.filter)});boot();
+</script></body></html>
