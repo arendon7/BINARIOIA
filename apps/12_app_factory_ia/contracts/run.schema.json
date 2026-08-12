@@ -1,0 +1,8 @@
+{
+  "schema": "sbia-run-1.0",
+  "app_id": "12-app-factory-ia",
+  "mode": "service",
+  "preferred_port": 8790,
+  "health": "/api/health",
+  "persistent_data": "global: ~/Library/Application Support/Binario IA/App Factory; generated source: ~/Documents/Binario IA/Projects/_App Factory/<slug>"
+}
