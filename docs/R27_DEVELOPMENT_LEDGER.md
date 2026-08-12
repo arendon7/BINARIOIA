@@ -10,7 +10,7 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - No declarar una capacidad “mejorada” si solo cambió Foundation: debe existir, ser visible y estar probada en su App.
 - No generar ZIP/DMG/PKG mientras el release gate falle o el issue #4 siga abierto.
 - No sustituir una capacidad histórica por una versión más simple sin migración explícita.
-- Los datos de usuario deben converger gradualmente al proyecto canónico; cualquier migración de stores legacy debe ser no destructiva.
+- Si un conteo de pruebas baja, se trata como **drift/regresión** hasta demostrar lo contrario. Nunca se actualiza el ledger hacia abajo para normalizar una pérdida.
 
 ## Baseline recuperable
 
@@ -26,6 +26,8 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - [x] `main/develop/feature/fix` establecidos.
 - [x] Importador fail-closed del baseline certificado.
 - [x] Release gate que exige fuente completa.
+- [x] CI Git-first para gobernanza, regresión y bloqueo de release.
+- [x] `.release-blocked` impide tags/ramas de release prematuros.
 - [ ] Árbol fuente R26 completo importado físicamente a Git. **BLOCKER #4**.
 
 ### Shell / navegación
@@ -33,45 +35,51 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - [x] APP 05 dirige a Video Studio R26/R27.
 - [x] Entradas legacy APP05/R26/App Factory/Knowledge convergen al runtime canónico.
 - [x] Inicio simplificado: Video / Proyectos / 12 Apps; avanzado separado.
+- [x] Capa visual R27 del Hub versionada en `hub/ui/assets/r27.css` y protegida por tests.
 - [x] Proyecto seleccionado en Hub se entrega al mismo Video Studio.
 - [x] Ruta de proyectos visible y abrible en Finder.
-- [x] APP05 y accesos R26 directos dejan de crear runtimes paralelos.
 - [ ] Smoke visual real en Mac.
 
-### Proyectos
+### Proyectos / almacenamiento
 - [x] Raíz canónica `~/Documents/Binario IA/Projects/`.
 - [x] Estructura física `assets/autosave/exports/training/logs`.
 - [x] Compatibilidad con registros históricos `prj-*.json`.
-- [x] Migración de proyectos viejos sin borrado.
+- [x] Migración no destructiva: copiar primero, conservar legacy y marcar migración.
 - [x] Preservación al desinstalar.
-- [x] `common/project_storage.py` como bridge reutilizable por App.
-- [x] APP03 migrada al mismo proyecto físico: estado, versiones, training, logs y exports.
-- [ ] Apps 01/02/04/06/07/08/09/10: migración gradual de stores paralelos. **TRACK #5**.
-- [ ] APP12: evaluar semántica de workspace antes de migrar storage.
+- [x] APP01 Audit → Project Storage canónico.
+- [x] APP02 Web → Project Storage canónico.
+- [x] APP03 Agent → Project Storage canónico + training.
+- [x] APP04 YouTube → Project Storage canónico.
+- [x] APP05 Video → proyecto físico R26/R27 canónico.
+- [x] APP06 Brand → Project Storage canónico.
+- [x] APP07 Commerce → Project Storage canónico.
+- [x] APP08 Kit → estado/build en autosave; entregables en exports.
+- [x] APP09 Proposal → Project Storage canónico.
+- [x] APP10 Research → Project Storage canónico.
+- [x] APP11 Documentos → usa flujo/proyecto canónico existente.
+- [x] APP12 App Factory → excepción explícita: estado global en Application Support; fuente generada visible en `Projects/_App Factory/<slug>`.
+- [ ] UAT Finder en Mac: confirmar que un usuario puede localizar todo sin conocer la arquitectura interna. **TRACK #5**.
 
 ### Video Studio
 - [x] Editor R26/R27 canónico desde APP05.
 - [x] Simple/Pro persistente fuera del origen del navegador.
 - [x] Simple mantiene controles útiles y oculta solo controles Pro.
 - [x] Timeline, clips sociales, captions, imágenes/B-roll, audio, color, silencios, proxies y render preservados desde R26.
-- [x] APP05 regresión histórica 75/75 PASS.
+- [x] APP05 regresión histórica **75/75 PASS**.
 - [ ] Smoke visual/ergonómico real en Mac.
 - [ ] Validar FFmpeg/VideoToolbox en hardware real.
 
 ### Whisper
 - [x] Worker aislado del Python de UI.
-- [x] Runtime nativo persistente por arquitectura.
-- [x] En macOS nunca cae al Python de la UI.
-- [x] Si falta runtime persistente, puede crear un runtime Whisper dedicado por arquitectura.
+- [x] Runtime nativo persistente/dedicado por arquitectura.
 - [x] Fail-closed arm64/x86_64.
 - [x] Estados separados `runtime_ok`, `model_cached`, `ready`.
 - [x] Modelo faltante se prepara sin reinstalar runtime sano.
 - [x] Preparación/reparación asíncrona con progreso.
 - [x] Fallo de Whisper no bloquea edición/render.
-- [x] Auto-prueba macOS: `say → audio → Whisper → texto` sin terminal.
-- [x] Inicio cambia de `Preparar / reparar Whisper` a `Probar Whisper` cuando está listo.
-- [ ] Ejecutar auto-prueba real en Mac arm64/x86_64.
-- [ ] Transcripción real de un video del usuario en Mac.
+- [x] Auto-prueba Mac `say → audio → Whisper → texto` expuesta desde Inicio.
+- [ ] Smoke real Mac arm64/x86_64.
+- [ ] Transcripción real de audio del usuario en Mac.
 
 ### Agent Studio / APP03
 - [x] Entrenamiento desde TXT/MD/PDF/DOCX.
@@ -79,11 +87,11 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - [x] Plantillas CSV/JSONL.
 - [x] Q&A explícitas se consideran conocimiento aprobado.
 - [x] Documentos libres requieren aprobación antes de retrieval.
-- [x] Fuente original guardada en `training/`.
+- [x] Fuente original guardada dentro del proyecto canónico.
 - [x] Export incluye documentos aprobados.
-- [x] Estado Agent Studio vive dentro del proyecto canónico, no en un segundo proyecto paralelo.
-- [x] Migración legacy no destructiva.
-- [x] APP03: 47 tests PASS en regresión actual.
+- [x] Gate físico de almacenamiento canónico.
+- [x] Drift local detectado y reconciliado contra Git; no se aceptó la caída 47→44.
+- [x] APP03: **47/47 PASS** en regresión actual.
 
 ### IA / modelos
 - [x] Control Center del Hub conserva rutas, proveedores, costos, Keychain y pruebas.
@@ -92,21 +100,24 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 
 ## Regresión actual
 
-- R27 core/UI: **85/85 PASS**.
-- 12 Apps: **463/463 PASS**.
-- APP03: **47/47 PASS**.
-- APP05: **75/75 PASS**.
-- Hub: PASS.
-- Foundation histórica: 611/612 durante desarrollo; el único fallo conocido es el checksum congelado del baseline, esperado porque R27 modifica fuente. Re-certificar checksums únicamente al cerrar release.
+Regresión reconstruida después de detectar y corregir drift local de APP03:
+
+- R27 core/UI: **86/86 PASS**.
+- 12 Apps, ejecutadas en procesos separados para evitar colisiones de nombres de módulos de test: **482/482 PASS**.
+- APP03 Agent Studio: **47/47 PASS**.
+- APP05 Video Studio: **75/75 PASS**.
+- APP12 App Factory: **28/28 PASS**.
+- Hub HTTP/contratos: PASS.
+- Foundation histórica: 612/612 en baseline preseal; durante desarrollo puede aparecer 611/612 por el checksum congelado de R26, esperado mientras cambia fuente. Re-certificar hashes únicamente al cerrar release.
 
 ## Gates antes de release
 
 1. Importar árbol fuente R26 completo al repo y cerrar #4.
 2. Reconciliar PR UX y PR Whisper sobre esa fuente física.
-3. 12/12 Apps discoverable y regresión completa PASS.
+3. 12/12 Apps discoverable y regresión completa PASS sin caída de conteos.
 4. R27 tests PASS.
-5. Smoke Mac: launcher único, proyectos, APP05, Simple/Pro, FFmpeg y Whisper `Probar Whisper` real.
-6. Revisión visual del Hub/Video en Mac.
-7. Validar persistencia/ubicación del proyecto desde Finder.
-8. Regenerar manifests/checksums desde Git limpio.
+5. Smoke Mac: launcher único, proyectos, APP05, Simple/Pro, FFmpeg/VideoToolbox y Whisper real.
+6. Revisión visual del Hub/Video y UAT Finder en Mac.
+7. Smoke de modelos/proveedores reales si se habilitan claves del usuario.
+8. Regenerar manifests/checksums desde checkout Git limpio.
 9. Solo entonces construir instalable y ofrecer descarga.
