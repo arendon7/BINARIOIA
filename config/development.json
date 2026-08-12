@@ -2,6 +2,10 @@
   "schema": "sbia-development-cycle-1.0",
   "cycle": "R27",
   "status": "active",
+  "canonical_repository": "arendon7/BINARIOIA",
+  "development_branch": "develop",
+  "stable_branch": "main",
+  "release_blocked": true,
   "stable_baseline": {
     "version": "0.26.0",
     "artifact": "BINARIO_IA_v0.26.0_R26_FULL_MAC.zip",
@@ -11,6 +15,7 @@
     "stable": "main",
     "integration": "develop",
     "baseline": "chore/r27-repo-baseline",
+    "source_import": "chore/r27-import-full-source",
     "ux": "feature/r27-unified-shell-video-ux",
     "whisper": "fix/r27-whisper-runtime"
   },
