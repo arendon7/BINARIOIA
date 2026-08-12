@@ -1,0 +1,100 @@
+      syncProjectLocation(); return true;
+    } catch (e) { toast(`No pude abrir el proyecto solicitado: ${e.message}`, true); return false; }
+  }
+
+  let state = load() || newProject();
+  let history = [], future = [], selected = null, filter = "all", pxSec = 10, playing = false, playTimer = null;
+
+  function seq() { return state.sequences.find(s => s.id === state.active_sequence_id); }
+  function track(kind) { return seq().tracks.find(t => t.kind === kind); }
+  function storage() { state.settings ||= {}; state.settings.storage ||= {}; return state.settings.storage; }
+  function transcript() { state.settings.transcript ||= {segments: [], source: null, language: null}; return state.settings.transcript; }
+  function social() { state.settings.social_clipper ||= {candidates: []}; return state.settings.social_clipper; }
+  function sceneStore() { state.settings.scene_strip ||= {asset_id: null, scenes: [], collapsed: false}; return state.settings.scene_strip; }
+  function silenceStore() { state.settings.silence_cleanup ||= {asset_id:null, ranges:[], total_silence:0, analyzed:false}; return state.settings.silence_cleanup; }
+
+  function ensureItemShape(item) {
+    item.metadata ||= {};
+    item.transform ||= baseTransform();
+    item.transform.crop ||= {top: 0, right: 0, bottom: 0, left: 0};
+    item.transform.x ??= 0.5; item.transform.y ??= 0.5; item.transform.scale ??= 1; item.transform.rotation ??= 0; item.transform.fit ||= "contain";
+    for (const side of ["top", "right", "bottom", "left"]) item.transform.crop[side] ??= 0;
+    item.transitions ||= baseTransitions(); item.transitions.in ||= {type: "none", duration: 0}; item.transitions.out ||= {type: "none", duration: 0};
+    item.keyframes ||= [];
+    item.color ||= baseColor(); for (const [k,v] of Object.entries(baseColor())) item.color[k] ??= v;
+    item.text_style ||= baseTextStyle(item.track); for (const [k,v] of Object.entries(baseTextStyle(item.track))) item.text_style[k] ??= v;
+    item.enabled ??= true; item.volume ??= 1; item.opacity ??= 1; item.source_in ??= 0; item.z_index ??= 0;
+  }
+  function ensureShape() {
+    state.schema_version = Math.max(26, Number(state.schema_version) || 26);
+    state.settings ||= {}; state.settings.storage ||= {}; state.settings.audio ||= {};
+    const audioDefaults = {auto_normalize: true, duck_music_under_voice: true, target_lufs: -14, true_peak_db: -1, lra: 11, voice_highpass_hz: 80, voice_denoise: true, voice_compression: true, music_gain: .30, limiter: true};
+    for (const [k,v] of Object.entries(audioDefaults)) state.settings.audio[k] ??= v;
+    state.settings.export ||= {codec: "h264", audio_codec: "aac", preset: "social_high", fps: 30, hardware_acceleration: "auto", quality_label: "Alta · H.264"};
+    state.settings.export.hardware_acceleration ??= "auto"; state.settings.export.quality_label ||= "Alta · H.264"; state.settings.export.publish_preset ||= "";
+    state.settings.timeline_edit_mode ||= "magnetic";
+    state.settings.key_ideas_default ??= false; state.settings.editing_mode ||= "simple";
+    transcript(); social(); sceneStore(); silenceStore(); state.settings.focus_mode ??= false;
+    state.assets ||= []; state.sequences ||= [];
+    if (!state.sequences.length) Object.assign(state, newProject());
+    for (const s of state.sequences) {
+      s.settings ||= {snap: true, safe_zones: true}; s.playhead ??= 0; s.duration = Math.max(1, Number(s.duration) || 60); s.tracks ||= [];
+      for (const [kind, label] of TRACKS) {
+        if (!s.tracks.find(t => t.kind === kind)) s.tracks.push({id: uid("track"), kind, label, enabled: kind !== "key_ideas", locked: kind === "subtitles", muted: false, items: []});
+      }
+      for (const t of s.tracks) { t.items ||= []; for (const item of t.items) ensureItemShape(item); }
+      const key = s.tracks.find(t => t.kind === "key_ideas"); if (key && state.settings.key_ideas_default === false) key.enabled = false;
+    }
+    if (!state.sequences.find(s => s.id === state.active_sequence_id)) state.active_sequence_id = state.sequences[0].id;
+  }
+  ensureShape();
+
+  function snapshot() {
+    history.push(JSON.stringify(state)); if (history.length > 100) history.shift(); future = []; dirty();
+  }
+  function dirty() {
+    $("saveState").textContent = "Guardando…";
+    clearTimeout(dirty.t); dirty.t = setTimeout(save, 300);
+  }
+  function save() {
+    localStorage.setItem("binario_video_r26_project", JSON.stringify(state));
+    $("saveState").textContent = "Guardado local…";
+    clearTimeout(save.diskT); save.diskT = setTimeout(savePhysical, 450);
+  }
+  async function ensureProjectStorage() {
+    const st = storage();
+    if (st.project_id) { syncProjectLocation(); return st; }
+    try {
+      const r = await apiJson("/api/project/create", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: state.name})});
+      st.project_id = r.project.id; st.path = r.project.path; st.assets_path = r.project.folders.assets; st.exports_path = r.project.folders.exports; st.autosave_path = r.project.folders.autosave;
+      localStorage.setItem("binario_video_r26_project", JSON.stringify(state)); syncProjectLocation(); return st;
+    } catch (e) {
+      $("saveState").textContent = "Solo recuperación local"; toast(`No pude crear carpeta de proyecto: ${e.message}`, true); return null;
+    }
+  }
+  async function savePhysical() {
+    const st = await ensureProjectStorage(); if (!st?.project_id) return;
+    try {
+      const r = await apiJson("/api/project/save", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({project_id: st.project_id, payload: state})});
+      st.last_autosave_path = r.path; localStorage.setItem("binario_video_r26_project", JSON.stringify(state)); $("saveState").textContent = "Guardado en proyecto"; syncProjectLocation();
+    } catch (e) { $("saveState").textContent = "Guardado local · error disco"; $("saveState").title = e.message; }
+  }
+  function syncProjectLocation() { const st = storage(); $("projectPath").textContent = st.path || "Sin ruta física"; $("projectPath").title = st.path || ""; }
+
+  function toast(text, error = false) {
+    const t = $("toast"); t.textContent = text; t.classList.remove("hidden", "error"); if (error) t.classList.add("error");
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add("hidden"), 2600);
+  }
+  function modal(title, text, okLabel = "Aceptar") {
+    return new Promise(resolve => {
+      const bg = document.createElement("div"); bg.className = "modal-backdrop";
+      bg.innerHTML = `<div class="modal"><h3>${escapeHtml(title)}</h3><p>${text}</p><div class="modal-actions"><button class="btn small ghost" data-no>Cancelar</button><button class="btn small primary" data-yes>${escapeHtml(okLabel)}</button></div></div>`;
+      document.body.appendChild(bg); bg.querySelector("[data-no]").onclick = () => { bg.remove(); resolve(false); }; bg.querySelector("[data-yes]").onclick = () => { bg.remove(); resolve(true); };
+    });
+  }
+
+  function renderAll() { renderSequences(); renderAssets(); renderTimeline(); renderInspector(); renderTranscript(); renderClipCandidates(); renderSceneStrip(); renderPreview(); syncControls(); }
+  function renderSequences() {
+    $("sequenceTabs").innerHTML = state.sequences.map(s => `<button class="seq-tab ${s.id === state.active_sequence_id ? "active" : ""}" data-seq="${s.id}">${s.kind === "clip" ? "✂ " : ""}${escapeHtml(s.name)}</button>`).join("");
+    document.querySelectorAll("[data-seq]").forEach(b => b.onclick = () => { state.active_sequence_id = b.dataset.seq; selected = null; save(); renderAll(); });
+  }
