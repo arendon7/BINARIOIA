@@ -1,0 +1,133 @@
+--- a/r26/r26_video_studio/server.py
++++ b/r26/r26_video_studio/server.py
+@@ -18,7 +18,7 @@
+ from .media_analysis import detect_scenes, detect_silences, generate_waveform, media_tools, probe_media
+ from .transcript import parse_srt, parse_vtt, normalize_segments
+ from .social_clipper import generate_candidates
+-from .transcription_adapter import transcription_status, transcribe
++from .transcription_adapter import transcription_status, transcribe, prepare as prepare_transcription, repair as repair_transcription
+ from .audio_pipeline import analyze_loudness
+ from .proxy_manager import cache_file, generate_proxy, generate_thumbnail
+ from .engine_bridge import bridge_status, run_external_r25
+@@ -142,6 +142,8 @@
+         def do_GET(self):
+             parsed = urlparse(self.path)
+             route = parsed.path
++            if route == "/api/health":
++                return self._json(200, {"service_id": __import__("os").environ.get("BINARIO_SERVICE_ID", "binario-r26-video-studio"), "product": "Binario IA Video Studio", "release": "R26-v9", "development_cycle": "R27-dev", "ok": True})
+             if route == "/api/media-tools":
+                 return self._json(200, {**media_tools(), "transcription": transcription_status()})
+             if route == "/api/project/media":
+@@ -176,7 +178,8 @@
+             if route == "/api/export/presets":
+                 return self._json(200, {"ok": True, "presets": list_export_presets()})
+             if route == "/api/status":
+-                return self._json(200, {"product": "Binario IA Video Studio", "release": "R26-v9", "timeline": "multipista", "key_ideas_default": False, "asset_remove_ui": True, "physical_project_autosave": True, "projects_root": str(projects_root), "sequence_types": ["long", "clip"], "tracks": ["video", "broll", "images", "key_ideas", "subtitles", "music", "voiceover"], "waveform": True, "editable_transcript": True, "transforms": True, "transitions": True, "keyframes": True, "social_clipper_integrated": True, "audio_mastering": True, "proxy_media": True, "thumbnails": True, "real_render_jobs": True, "r25_engine_bridge": True, "transcription_fail_isolation": True, "scene_strip": True, "audio_automation": True, "batch_clip_render": True, "apple_silicon_acceleration": True, "ux_quick_actions": True, "color_correction": True, "caption_presets": True, "silence_detection": True, "ripple_silence_cleanup": True, "ux_focus_mode": True, "magnetic_editing": True, "ripple_drag": True, "advanced_native_transitions": True, "publish_export_presets": True, "workflow_quickbar": True})
++                import os
++                return self._json(200, {"product": "Binario IA Video Studio", "release": "R26-v9", "development_cycle": "R27-dev", "hub_url": os.environ.get("BINARIO_HUB_URL"), "timeline": "multipista", "key_ideas_default": False, "asset_remove_ui": True, "physical_project_autosave": True, "projects_root": str(projects_root), "sequence_types": ["long", "clip"], "tracks": ["video", "broll", "images", "key_ideas", "subtitles", "music", "voiceover"], "waveform": True, "editable_transcript": True, "transforms": True, "transitions": True, "keyframes": True, "social_clipper_integrated": True, "audio_mastering": True, "proxy_media": True, "thumbnails": True, "real_render_jobs": True, "r25_engine_bridge": True, "transcription_fail_isolation": True, "scene_strip": True, "audio_automation": True, "batch_clip_render": True, "apple_silicon_acceleration": True, "ux_quick_actions": True, "color_correction": True, "caption_presets": True, "silence_detection": True, "ripple_silence_cleanup": True, "ux_focus_mode": True, "magnetic_editing": True, "ripple_drag": True, "advanced_native_transitions": True, "publish_export_presets": True, "workflow_quickbar": True})
+             mapping = {"/": "index.html", "/video-studio.js": "video-studio.js", "/video-studio.css": "video-studio.css"}
+             name = mapping.get(route)
+             if not name:
+@@ -337,14 +340,20 @@
+                             raise ValueError("segments must be list")
+                         segments = normalize_segments(rows)
+                     return self._json(200, {"ok": True, "segments": [x.to_dict() for x in segments]})
++                if route == "/api/transcription/prepare":
++                    result = prepare_transcription()
++                    return self._json(200 if result.get("ok") else 503, result)
++                if route == "/api/transcription/repair":
++                    result = repair_transcription()
++                    return self._json(200 if result.get("ok") else 503, result)
+                 if route == "/api/transcript/transcribe":
+                     project_id = str(body.get("project_id", ""))
+                     filename = str(body.get("filename", ""))
+                     target = _project_asset(projects_root, project_id, filename)
+                     project = find_project(projects_root, project_id)
+                     output = Path(project["folders"]["autosave"]) / "transcript_r26.json"
+-                    segments = transcribe(target, output)
+-                    return self._json(200, {"ok": True, "segments": segments, "path": str(output)})
++                    segments = transcribe(target, output, language=(str(body.get("language") or "").strip() or None))
++                    return self._json(200, {"ok": True, "segments": segments, "path": str(output), "transcription": transcription_status()})
+                 if route == "/api/social-clips/candidates":
+                     rows = body.get("segments") or []
+                     if not isinstance(rows, list):
+--- a/r26/r26_video_studio/runtime_health.py
++++ b/r26/r26_video_studio/runtime_health.py
+@@ -53,6 +53,11 @@
+         joined = " ".join(texts).lower()
+         if expected == "arm64" and joined and "x86_64" in joined and "arm64" not in joined:
+             incompatible.append({"module": name, "reason": "x86_64_binary_on_arm64_runtime"})
++    try:
++        from runtime.whisper_gateway import status as whisper_gateway_status
++        whisper = whisper_gateway_status()
++    except Exception as exc:
++        whisper = {"ready": False, "error": f"{type(exc).__name__}: {exc}"}
+     return {
+         "python": sys.version.split()[0],
+         "machine": machine,
+@@ -60,8 +65,11 @@
+         "ffprobe": shutil.which("ffprobe"),
+         "modules": modules,
+         "architecture_mismatches": incompatible,
+-        "healthy": bool(shutil.which("ffmpeg")) and not incompatible,
++        "whisper_runtime": whisper,
++        "healthy": bool(shutil.which("ffmpeg")),
++        "transcription_healthy": bool(whisper.get("ready")),
+         "policy": "diagnostic_only_no_import_of_optional_video_stack",
++        "whisper_policy": "ui_process_optional_binary_diagnostics_plus_isolated_whisper_runtime",
+     }
+--- a/r26/r26_video_studio/transcription_adapter.py
++++ b/r26/r26_video_studio/transcription_adapter.py
+@@ -1,35 +1,48 @@
+ from __future__ import annotations
+ 
+-import importlib.util
+ import json
+ import os
+ import shlex
+ import subprocess
++import sys
+ from pathlib import Path
+ from typing import Any
+ 
+-from .runtime_health import runtime_health
++ROOT = Path(__file__).resolve().parents[2]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from runtime.whisper_gateway import prepare as prepare_runtime_whisper
++from runtime.whisper_gateway import repair as repair_runtime_whisper
++from runtime.whisper_gateway import status as runtime_whisper_status
++from runtime.whisper_gateway import transcribe as runtime_transcribe
+ from .transcript import normalize_segments
+@@ -48,29 +61,22 @@
+     return [s.to_dict() for s in normalize_segments(rows)]
+ 
+-def _local_transcribe(path: Path, output_path: Path) -> list[dict[str, Any]]:
+-    from faster_whisper import WhisperModel  # type: ignore
+-    model_name = os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small"
+-    compute_type = os.environ.get("BINARIO_WHISPER_COMPUTE", "int8").strip() or "int8"
+-    model = WhisperModel(model_name, device="cpu", compute_type=compute_type)
+-    segments, info = model.transcribe(str(path), vad_filter=True, beam_size=5)
+-    rows: list[dict[str, Any]] = []
+-    for n, seg in enumerate(segments, 1): rows.append({"id": f"whisper_{n}", "start": float(seg.start), "end": float(seg.end), "text": str(seg.text).strip()})
+-    normalized = [s.to_dict() for s in normalize_segments(rows)]
+-    output_path.write_text(json.dumps({"segments": normalized, "language": getattr(info, "language", None), "engine": "faster_whisper"}, ensure_ascii=False, indent=2), encoding="utf-8")
+-    return normalized
++def prepare() -> dict[str, Any]:
++    return prepare_runtime_whisper(os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small")
+ 
+-def transcribe(path: Path, output_path: Path) -> list[dict[str, Any]]:
+-    status = transcription_status()
++def repair() -> dict[str, Any]:
++    return repair_runtime_whisper(os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small")
++
++def transcribe(path: Path, output_path: Path, language: str | None = None) -> list[dict[str, Any]]:
+     output_path.parent.mkdir(parents=True, exist_ok=True)
+-    if status["r25_external"]:
++    if os.environ.get("BINARIO_R25_TRANSCRIBE_CMD", "").strip():
+         return _external_transcribe(path, output_path)
+-    if status["local_faster_whisper"]: return _local_transcribe(path, output_path)
+-    raise RuntimeError("No safe transcription engine is configured. Editor and rendering remain available")
++    rows = runtime_transcribe(path, output_path, model=os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small", language=language)
++    return [s.to_dict() for s in normalize_segments(rows)]
