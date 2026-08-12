@@ -65,6 +65,24 @@ def get(pid:str)->dict|None:
     try:return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
     except Exception:return None
 
+
+def repair_existing_projects()->dict:
+    repaired=[]; unchanged=[]; failed=[]
+    for p in _root().glob("prj-*.json"):
+        try:
+            row=json.loads(p.read_text(encoding="utf-8"))
+            meta=row.get("metadata") if isinstance(row.get("metadata"),dict) else {}
+            project_path=Path(str(meta.get("project_path") or "")).expanduser() if meta.get("project_path") else None
+            manifest_ok=bool(project_path and _inside(_root(),project_path) and (project_path/"project.json").is_file())
+            if manifest_ok:
+                unchanged.append(str(row.get("id") or p.stem));continue
+            row=_sync_workspace(row)
+            p.write_text(json.dumps(row,indent=2,ensure_ascii=False),encoding="utf-8")
+            repaired.append(str(row.get("id") or p.stem))
+        except Exception as exc:
+            failed.append({"file":str(p),"error":f"{type(exc).__name__}: {exc}"})
+    return {"ok":not failed,"repaired":repaired,"unchanged":unchanged,"failed":failed,"root":str(_root())}
+
 def list_projects(app_id:str|None=None,include_archived:bool=False)->list[dict]:
     rows=[]
     for p in _root().glob("prj-*.json"):
