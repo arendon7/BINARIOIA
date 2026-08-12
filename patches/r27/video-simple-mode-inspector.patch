@@ -1,0 +1,31 @@
+--- a/r26/r26_video_studio/index.html
++++ b/r26/r26_video_studio/index.html
+@@
+-          <section class="inspector-card advanced-card" id="selectedInspector">
++          <section class="inspector-card" id="selectedInspector">
+             <strong>Elemento seleccionado</strong>
+             <div class="empty-inspector">Selecciona un elemento del timeline.</div>
+           </section>
+--- a/r26/r26_video_studio/video-studio.js
++++ b/r26/r26_video_studio/video-studio.js
+@@
+-    const visual = VISUAL_TRACKS.has(i.track) ? `
++    const visual = VISUAL_TRACKS.has(i.track) ? `<div class="pro-only">
+       <div class="inspector-subhead">Color</div>
+@@
+-      <div class="keyframe-list">${i.keyframes.filter(k => k.transform).length ? i.keyframes.map((k, idx) => k.transform ? `<div class="keyframe-row"><span>${fmt(k.time)}</span><span>x ${Number(k.transform?.x ?? .5).toFixed(2)} · y ${Number(k.transform?.y ?? .5).toFixed(2)} · ${Number(k.transform?.scale ?? 1).toFixed(2)}×</span><button class="transcript-remove" data-remove-keyframe="${idx}">×</button></div>` : "").join("") : "<div class='empty-inspector'>Sin keyframes visuales.</div>"}</div>` : "";
++      <div class="keyframe-list">${i.keyframes.filter(k => k.transform).length ? i.keyframes.map((k, idx) => k.transform ? `<div class="keyframe-row"><span>${fmt(k.time)}</span><span>x ${Number(k.transform?.x ?? .5).toFixed(2)} · y ${Number(k.transform?.y ?? .5).toFixed(2)} · ${Number(k.transform?.scale ?? 1).toFixed(2)}×</span><button class="transcript-remove" data-remove-keyframe="${idx}">×</button></div>` : "").join("") : "<div class='empty-inspector'>Sin keyframes visuales.</div>"}</div></div>` : "";
+@@
+-    const audioAutomation = AUDIO_CAPABLE_TRACKS.has(i.track) ? `<div class="inspector-subhead">Automatización de volumen</div>
++    const audioAutomation = AUDIO_CAPABLE_TRACKS.has(i.track) ? `<div class="pro-only"><div class="inspector-subhead">Automatización de volumen</div>
+@@
+-      </div>` : "";
++      </div></div>` : "";
+--- a/r26/r26_video_studio/video-studio.css
++++ b/r26/r26_video_studio/video-studio.css
+@@
+ .simple-mode .advanced-card{display:none}
++.simple-mode .pro-only{display:none}
++.simple-mode #selectedInspector{display:block}
++.simple-mode #selectedInspector .inspector-subhead{margin-top:8px}
+ .simple-mode .transcript-card,.simple-mode .clipper-card{display:block}
