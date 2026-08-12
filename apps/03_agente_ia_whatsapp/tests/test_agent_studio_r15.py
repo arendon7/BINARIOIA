@@ -55,6 +55,10 @@ class AgentStudioR15Tests(unittest.TestCase):
         from agent_studio.service import import_training_into_project
         from agent_studio.simulator import simulate
         p=default_project('Docs','Docs');r=import_training_into_project(p,'manual.txt','La garantía dura doce meses.'.encode());saved=get(p['id']);self.assertEqual(r['added']['document_chunks'],1);self.assertFalse(saved['knowledge_documents'][0]['enabled']);saved['knowledge_documents'][0]['enabled']=True;save(saved);answer=simulate(saved,'garantía');self.assertEqual(answer['source'],'knowledge');self.assertIn('doce meses',answer['assistant'])
+    def test_agent_state_uses_canonical_project_folder(self):
+        from agent_studio.store import default_project,project_path,activity_path,export_dir
+        from common.project_center import get as global_get
+        p=default_project('Canonical','Canonical');g=global_get(p['id']);root=Path(g['metadata']['project_path']).resolve();self.assertIn(root,project_path(p['id']).resolve().parents);self.assertIn(root,activity_path(p['id']).resolve().parents);self.assertIn(root,export_dir(p['id']).resolve().parents);self.assertFalse((Path(os.environ['BINARIO_AGENT_STUDIO_HOME'])/p['id']/'project.json').exists())
     def test_manifest_is_service_and_has_journey(self):
         d=json.loads((Path(__file__).resolve().parents[1]/'manifest.json').read_text());self.assertEqual(d['engine_type'],'service');self.assertEqual(d['special_service']['port'],8785);self.assertIn('observe',d['journey'])
 if __name__=='__main__':unittest.main()
