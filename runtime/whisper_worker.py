@@ -25,7 +25,7 @@ def _package_version(name: str) -> str | None:
         return None
 
 
-def probe() -> dict:
+def probe(model_name: str = DEFAULT_MODEL) -> dict:
     result = {
         "ok": False,
         "python": sys.executable,
@@ -43,10 +43,30 @@ def probe() -> dict:
             "av": _package_version("av"),
             "ctranslate2": _package_version("ctranslate2"),
         }
+        source = _model_source(model_name)
+        result["model"] = model_name
+        result["model_source"] = source
+        result["model_cached"] = source != model_name
         result["ok"] = True
     except Exception as exc:
         result["error"] = f"{type(exc).__name__}: {exc}"
     return result
+
+
+def _model_source(model_name: str) -> str:
+    root = models_root()
+    deterministic = root / model_name
+    if deterministic.is_dir() and (deterministic / "model.bin").is_file():
+        return str(deterministic)
+    safe = model_name.replace("/", "--")
+    for prefix in ("Systran", "systran"):
+        legacy = root / f"models--{prefix}--faster-whisper-{safe}"
+        if legacy.is_dir() and (legacy / "model.bin").is_file():
+            return str(legacy)
+        for snapshot in legacy.glob("snapshots/*") if legacy.exists() else ():
+            if snapshot.is_dir() and (snapshot / "model.bin").is_file():
+                return str(snapshot)
+    return model_name
 
 
 def _load_model(model_name: str):
@@ -56,12 +76,16 @@ def _load_model(model_name: str):
     root.mkdir(parents=True, exist_ok=True)
     compute_type = os.environ.get("BINARIO_WHISPER_COMPUTE", "int8").strip() or "int8"
     device = os.environ.get("BINARIO_WHISPER_DEVICE", "cpu").strip() or "cpu"
-    return WhisperModel(model_name, device=device, compute_type=compute_type, download_root=str(root))
+    source = _model_source(model_name)
+    kwargs = {"device": device, "compute_type": compute_type}
+    if source == model_name:
+        kwargs["download_root"] = str(root)
+    return WhisperModel(source, **kwargs)
 
 
 def prepare(model_name: str) -> dict:
     started = time.time()
-    status = probe()
+    status = probe(model_name)
     if not status.get("ok"):
         return status
     try:
@@ -129,7 +153,7 @@ def main() -> int:
     args = ap.parse_args()
     try:
         if args.action == "probe":
-            result = probe()
+            result = probe(args.model)
         elif args.action == "prepare":
             result = prepare(args.model)
         else:
