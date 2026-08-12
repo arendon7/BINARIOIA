@@ -1,35 +1,48 @@
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
 import shlex
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
-from .runtime_health import runtime_health
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from runtime.whisper_gateway import prepare as prepare_runtime_whisper
+from runtime.whisper_gateway import repair as repair_runtime_whisper
+from runtime.whisper_gateway import status as runtime_whisper_status
+from runtime.whisper_gateway import transcribe as runtime_transcribe
 from .transcript import normalize_segments
 
 
 def transcription_status() -> dict[str, Any]:
     template = os.environ.get("BINARIO_R25_TRANSCRIBE_CMD", "").strip()
-    faster = importlib.util.find_spec("faster_whisper") is not None
-    health = runtime_health()
-    mismatches = health.get("architecture_mismatches") or []
-    local_safe = faster and not mismatches
-    available = bool(template) or local_safe
-    mode = "r25_external" if template else ("local_faster_whisper" if local_safe else "not_available")
+    runtime = runtime_whisper_status(os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small")
+    if template:
+        return {
+            "available": True,
+            "ready": True,
+            "mode": "explicit_external_override",
+            "r25_external": True,
+            "runtime": runtime,
+            "env": "BINARIO_R25_TRANSCRIBE_CMD",
+            "contract": "Command receives {input} and {output}; output must be JSON list or {segments:[...]}",
+            "repair_supported": True,
+            "nonfatal": True,
+            "policy": "editor_never_depends_on_transcription; explicit_external_override_then_isolated_native_runtime",
+        }
     return {
-        "available": available,
-        "mode": mode,
-        "r25_external": bool(template),
-        "local_faster_whisper": local_safe,
+        **runtime,
+        "r25_external": False,
+        "runtime": runtime,
         "env": "BINARIO_R25_TRANSCRIBE_CMD",
-        "contract": "R25 command receives {input} and {output}; output must be JSON list or {segments:[...]}",
+        "contract": "Whisper runs in the architecture-certified persistent runtime, isolated from the Video Studio UI process.",
         "nonfatal": True,
-        "architecture_mismatches": mismatches,
-        "policy": "prefer_r25_then_safe_local_whisper_editor_never_depends_on_transcription",
+        "policy": "editor_never_depends_on_transcription; single_native_runtime_worker_no_optional_binary_import_in_ui_process",
     }
 
 
@@ -48,28 +61,22 @@ def _external_transcribe(path: Path, output_path: Path) -> list[dict[str, Any]]:
     return [s.to_dict() for s in normalize_segments(rows)]
 
 
-def _local_transcribe(path: Path, output_path: Path) -> list[dict[str, Any]]:
-    from faster_whisper import WhisperModel  # type: ignore
-
-    model_name = os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small"
-    compute_type = os.environ.get("BINARIO_WHISPER_COMPUTE", "int8").strip() or "int8"
-    model = WhisperModel(model_name, device="cpu", compute_type=compute_type)
-    segments, info = model.transcribe(str(path), vad_filter=True, beam_size=5)
-    rows: list[dict[str, Any]] = []
-    for n, seg in enumerate(segments, 1):
-        rows.append({"id": f"whisper_{n}", "start": float(seg.start), "end": float(seg.end), "text": str(seg.text).strip()})
-    normalized = [s.to_dict() for s in normalize_segments(rows)]
-    output_path.write_text(json.dumps({"segments": normalized, "language": getattr(info, "language", None), "engine": "faster_whisper"}, ensure_ascii=False, indent=2), encoding="utf-8")
-    return normalized
+def prepare() -> dict[str, Any]:
+    return prepare_runtime_whisper(os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small")
 
 
-def transcribe(path: Path, output_path: Path) -> list[dict[str, Any]]:
-    status = transcription_status()
+def repair() -> dict[str, Any]:
+    return repair_runtime_whisper(os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small")
+
+
+def transcribe(path: Path, output_path: Path, language: str | None = None) -> list[dict[str, Any]]:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    if status["r25_external"]:
+    if os.environ.get("BINARIO_R25_TRANSCRIBE_CMD", "").strip():
         return _external_transcribe(path, output_path)
-    if status["local_faster_whisper"]:
-        return _local_transcribe(path, output_path)
-    mismatch = status.get("architecture_mismatches") or []
-    detail = f"; architecture mismatch: {mismatch}" if mismatch else ""
-    raise RuntimeError("No safe transcription engine is configured. Editor and rendering remain available" + detail)
+    rows = runtime_transcribe(
+        path,
+        output_path,
+        model=os.environ.get("BINARIO_WHISPER_MODEL", "small").strip() or "small",
+        language=language,
+    )
+    return [s.to_dict() for s in normalize_segments(rows)]
