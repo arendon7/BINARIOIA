@@ -10,6 +10,7 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - No declarar una capacidad “mejorada” si solo cambió Foundation: debe existir, ser visible y estar probada en su App.
 - No generar ZIP/DMG/PKG mientras el release gate falle o el issue #4 siga abierto.
 - No sustituir una capacidad histórica por una versión más simple sin migración explícita.
+- Los datos de usuario deben converger gradualmente al proyecto canónico; cualquier migración de stores legacy debe ser no destructiva.
 
 ## Baseline recuperable
 
@@ -34,6 +35,7 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - [x] Inicio simplificado: Video / Proyectos / 12 Apps; avanzado separado.
 - [x] Proyecto seleccionado en Hub se entrega al mismo Video Studio.
 - [x] Ruta de proyectos visible y abrible en Finder.
+- [x] APP05 y accesos R26 directos dejan de crear runtimes paralelos.
 - [ ] Smoke visual real en Mac.
 
 ### Proyectos
@@ -42,6 +44,10 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - [x] Compatibilidad con registros históricos `prj-*.json`.
 - [x] Migración de proyectos viejos sin borrado.
 - [x] Preservación al desinstalar.
+- [x] `common/project_storage.py` como bridge reutilizable por App.
+- [x] APP03 migrada al mismo proyecto físico: estado, versiones, training, logs y exports.
+- [ ] Apps 01/02/04/06/07/08/09/10: migración gradual de stores paralelos. **TRACK #5**.
+- [ ] APP12: evaluar semántica de workspace antes de migrar storage.
 
 ### Video Studio
 - [x] Editor R26/R27 canónico desde APP05.
@@ -55,13 +61,17 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 ### Whisper
 - [x] Worker aislado del Python de UI.
 - [x] Runtime nativo persistente por arquitectura.
+- [x] En macOS nunca cae al Python de la UI.
+- [x] Si falta runtime persistente, puede crear un runtime Whisper dedicado por arquitectura.
 - [x] Fail-closed arm64/x86_64.
 - [x] Estados separados `runtime_ok`, `model_cached`, `ready`.
 - [x] Modelo faltante se prepara sin reinstalar runtime sano.
 - [x] Preparación/reparación asíncrona con progreso.
 - [x] Fallo de Whisper no bloquea edición/render.
-- [ ] Smoke real Mac arm64/x86_64.
-- [ ] Transcripción real de audio corto en Mac.
+- [x] Auto-prueba macOS: `say → audio → Whisper → texto` sin terminal.
+- [x] Inicio cambia de `Preparar / reparar Whisper` a `Probar Whisper` cuando está listo.
+- [ ] Ejecutar auto-prueba real en Mac arm64/x86_64.
+- [ ] Transcripción real de un video del usuario en Mac.
 
 ### Agent Studio / APP03
 - [x] Entrenamiento desde TXT/MD/PDF/DOCX.
@@ -71,7 +81,9 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 - [x] Documentos libres requieren aprobación antes de retrieval.
 - [x] Fuente original guardada en `training/`.
 - [x] Export incluye documentos aprobados.
-- [x] APP03: 46 tests PASS en regresión actual.
+- [x] Estado Agent Studio vive dentro del proyecto canónico, no en un segundo proyecto paralelo.
+- [x] Migración legacy no destructiva.
+- [x] APP03: 47 tests PASS en regresión actual.
 
 ### IA / modelos
 - [x] Control Center del Hub conserva rutas, proveedores, costos, Keychain y pruebas.
@@ -80,8 +92,10 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 
 ## Regresión actual
 
-- R27 core/UI: **82/82 PASS**.
-- 12 Apps: **462/462 PASS**.
+- R27 core/UI: **85/85 PASS**.
+- 12 Apps: **463/463 PASS**.
+- APP03: **47/47 PASS**.
+- APP05: **75/75 PASS**.
 - Hub: PASS.
 - Foundation histórica: 611/612 durante desarrollo; el único fallo conocido es el checksum congelado del baseline, esperado porque R27 modifica fuente. Re-certificar checksums únicamente al cerrar release.
 
@@ -91,7 +105,8 @@ Fuente operativa para no perder capacidades entre iteraciones. Actualizar este a
 2. Reconciliar PR UX y PR Whisper sobre esa fuente física.
 3. 12/12 Apps discoverable y regresión completa PASS.
 4. R27 tests PASS.
-5. Smoke Mac: launcher único, proyectos, APP05, Simple/Pro, FFmpeg y Whisper real.
+5. Smoke Mac: launcher único, proyectos, APP05, Simple/Pro, FFmpeg y Whisper `Probar Whisper` real.
 6. Revisión visual del Hub/Video en Mac.
-7. Regenerar manifests/checksums desde Git limpio.
-8. Solo entonces construir instalable y ofrecer descarga.
+7. Validar persistencia/ubicación del proyecto desde Finder.
+8. Regenerar manifests/checksums desde Git limpio.
+9. Solo entonces construir instalable y ofrecer descarga.
