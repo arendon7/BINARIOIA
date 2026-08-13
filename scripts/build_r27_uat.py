@@ -11,7 +11,7 @@ OLD_PAYLOAD='Binario IA v0.25.1-a1'; NEW_PAYLOAD='Binario IA R27 UAT'
 OLD_APP='INSTALAR BINARIO IA R26 FULL.app'; NEW_APP='INSTALAR BINARIO IA R27 UAT.app'
 CMD='INSTALAR_BINARIO_IA_R27_FULL_MAC_UAT.command'
 OVERLAY_DIRS=('apps','common','hub','r26','runtime','config','scripts','tests','docs')
-ROOT_OVERLAY_FILES=('ABRIR_KNOWLEDGE_OBSIDIAN.command','EMPIEZA_AQUI.md','README.md')
+ROOT_OVERLAY_FILES=('ABRIR_BINARIO_IA.command','ABRIR_BINARIO_IA_R26.command','ABRIR_KNOWLEDGE_OBSIDIAN.command','EMPIEZA_AQUI.md','README.md')
 CHECKSUM_PREFIXES=('apps','common','hub','runtime','workflow','config','scripts')
 
 def sha(path:Path)->str:
@@ -108,8 +108,9 @@ def main():
   for n in ROOT_OVERLAY_FILES:merge(repo/n,payload/n)
   for name in ('ABRIR_BINARIO_IA_R27.command','DESINSTALAR_BINARIO_IA_R27_UAT.command'):
    shutil.copy2(templates/name,payload/name);executable(payload/name)
-  (payload/'ABRIR_BINARIO_IA.command').write_text('#!/bin/zsh\nROOT="$(cd "$(dirname "$0")" && pwd)"\nexec "$ROOT/ABRIR_BINARIO_IA_R27.command" "$@"\n');executable(payload/'ABRIR_BINARIO_IA.command')
-  (payload/'ABRIR_BINARIO_IA_R26.command').write_text('#!/bin/zsh\n# Alias de compatibilidad del candidato R27 UAT.\nROOT="$(cd "$(dirname "$0")" && pwd)"\nexec "$ROOT/ABRIR_BINARIO_IA_R27.command" "$@"\n');executable(payload/'ABRIR_BINARIO_IA_R26.command')
+  for name in ('ABRIR_BINARIO_IA.command','ABRIR_BINARIO_IA_R26.command','ABRIR_BINARIO_IA_R27.command','DESINSTALAR_BINARIO_IA_R27_UAT.command'):
+   p=payload/name
+   if p.exists():executable(p)
   (payload/'.release-blocked').write_text('R27 UAT: promoción a estable bloqueada únicamente hasta completar smoke físico en Mac.\nGates de código: fuente R27 + baseline R26 certificada + overlay SHA-256.\nPendiente físico: Hub, Video Studio, FFmpeg y Whisper end-to-end.\n')
   checks=write_package_checksums(payload);build_meta['certified_payload_files']=checks
   (payload/'R27_UAT_BUILD.json').write_text(json.dumps(build_meta,indent=2,ensure_ascii=False),encoding='utf-8')
