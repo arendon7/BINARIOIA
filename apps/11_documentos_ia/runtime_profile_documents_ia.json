@@ -1,0 +1,7 @@
+{
+  "id":"documents_ia",
+  "required":["python3"],
+  "python_packages":["python-docx","pypdf"],
+  "optional_system":["libreoffice"],
+  "notes":"DOCX requiere python-docx. PDF final se genera vía LibreOffice cuando está disponible. HTML/Markdown permanecen disponibles como formatos degradados."
+}

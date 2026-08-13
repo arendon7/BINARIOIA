@@ -79,7 +79,15 @@ jobs:
         run: python -m pip install --disable-pip-version-check -q pytest
       - name: Run core/R27 tests when executable source is hydrated
         if: steps.source.outputs.present == 'true'
-        run: python -m pytest tests -q
+        run: python -m pytest tests -q --junitxml=r27-pytest.xml
+      - name: Persist R27 pytest report
+        if: always() && steps.source.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: r27-pytest-report
+          path: r27-pytest.xml
+          if-no-files-found: error
+          retention-days: 14
       - name: Verify twelve application source directories
         if: steps.source.outputs.present == 'true'
         run: python scripts/release_gate.py --repo .

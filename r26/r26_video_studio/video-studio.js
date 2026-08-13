@@ -1,16 +1,45 @@
 (() => {
   "use strict";
+
+  const assemblyContract = Object.freeze({
+    schema: "sbia-video-studio-r27-assembly-1.0",
+    product: "Binario IA · Video Studio",
+    primaryFlowLabel: "Importar → Transcribir → Clips → Renderizar",
+    editingModeStorageKey: "binario_video_r26_editing_mode",
+    requiredSymbols: [
+      "persistEditingMode",
+      "restoreEditingMode",
+      "attachRequestedProject"
+    ],
+    requiredRoutes: [
+      "/api/project/load",
+      "/api/preferences",
+      "/api/transcript/transcribe",
+      "/api/social-clips/candidates"
+    ]
+  });
+
   const parts = [
     "video-studio.part01.js.txt","video-studio.part02.js.txt","video-studio.part03.js.txt","video-studio.part04.js.txt",
     "video-studio.part05.js.txt","video-studio.part06.js.txt","video-studio.part07a.js.txt","video-studio.part07b.js.txt",
     "video-studio.part07c.js.txt","video-studio.part08.js.txt"
   ];
+
   Promise.all(parts.map(async name => {
     const response = await fetch(name, {cache:"no-store"});
     if (!response.ok) throw new Error(`No se pudo cargar ${name}: HTTP ${response.status}`);
     return response.text();
   })).then(rows => {
     const source = rows.join("");
+    const requiredTokens = [
+      assemblyContract.editingModeStorageKey,
+      ...assemblyContract.requiredSymbols,
+      ...assemblyContract.requiredRoutes
+    ];
+    const missing = requiredTokens.filter(token => !source.includes(token));
+    if (missing.length) {
+      throw new Error(`Fuente R27 incompleta; faltan contratos: ${missing.join(", ")}`);
+    }
     (0, eval)(`${source}\n//# sourceURL=binario-video-studio-r27-assembled.js`);
   }).catch(error => {
     console.error("Binario Video Studio source hydration failed", error);

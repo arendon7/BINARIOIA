@@ -1,2 +1,9 @@
 @import url("video-studio.part01.css");
 @import url("video-studio.part02.css");
+
+/* R27 entrypoint contract: the essential Simple/Pro visibility policy stays
+   explicit here so a partial CSS hydration cannot expose advanced controls
+   while hiding transcription or Social Clipper. Deeper styling remains in
+   the imported parts. */
+.simple-mode .advanced-card{display:none}
+.simple-mode .transcript-card,.simple-mode .clipper-card{display:block}

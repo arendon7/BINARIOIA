@@ -1,0 +1,17 @@
+{
+  "schema":"sbia-native-pro-scorecard-1.0",
+  "app":"Documentos IA",
+  "score":100,
+  "areas":{
+    "engine_independence":10,
+    "structured_authoring":10,
+    "sources_and_provenance":10,
+    "provider_abstraction":10,
+    "quality_gate":10,
+    "revision_and_traceability":10,
+    "multiformat_export":10,
+    "hub_workflow_contracts":10,
+    "security_and_input_validation":10,
+    "tests_and_visual_qa":10
+  }
+}

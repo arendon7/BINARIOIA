@@ -1,0 +1,168 @@
+{
+  "id": "documentos-ia-demo",
+  "title": "Documentos IA - Especificación funcional de validación",
+  "document_type": "report",
+  "objective": "Validar el motor documental Native PRO de Binario IA.",
+  "audience": "Equipo de desarrollo y producto",
+  "language": "es",
+  "blocks": [
+    {
+      "id": "h1",
+      "kind": "heading",
+      "text": "Resumen ejecutivo",
+      "level": 1,
+      "locked": true
+    },
+    {
+      "id": "p1",
+      "kind": "paragraph",
+      "text": "Documentos IA se plantea como una aplicación nativa de Binario IA para transformar información suministrada por el usuario en documentos profesionales, estructurados y auditables. Su diseño separa la generación de contenido de la estructura documental, de manera que cada sección pueda revisarse, editarse y versionarse antes de la publicación final.",
+      "source_ids": [
+        "src-770551d6a859"
+      ]
+    },
+    {
+      "id": "h2",
+      "kind": "heading",
+      "text": "Objetivo y alcance",
+      "level": 1,
+      "locked": true
+    },
+    {
+      "id": "p2",
+      "kind": "paragraph",
+      "text": "El objetivo es ofrecer un flujo completo que abarque planeación, redacción asistida, uso controlado de fuentes, edición por bloques, control de calidad y exportación. La aplicación debe funcionar con el proveedor de IA configurado en el Hub, pero conservar un núcleo documental independiente que permita validar estructura, formato y procedencia incluso cuando no exista conexión con un modelo externo.",
+      "source_ids": [
+        "src-770551d6a859"
+      ]
+    },
+    {
+      "id": "h3",
+      "kind": "heading",
+      "text": "Flujo operativo",
+      "level": 1,
+      "locked": true
+    },
+    {
+      "id": "p3",
+      "kind": "paragraph",
+      "text": "El flujo comienza con la definición del tipo de documento, su audiencia y propósito. Luego se incorporan fuentes, se construye un esquema, se generan o redactan los bloques y se revisa la coherencia. Antes de publicar, el Quality Gate verifica que no existan placeholders, referencias rotas, secciones vacías ni incumplimientos de trazabilidad cuando el proyecto exige fuentes.",
+      "source_ids": [
+        "src-770551d6a859"
+      ]
+    },
+    {
+      "id": "b1",
+      "kind": "bullets",
+      "items": [
+        "Crear proyecto y seleccionar tipo documental.",
+        "Adjuntar fuentes y registrar su hash.",
+        "Construir o ajustar el esquema.",
+        "Generar y editar contenido por bloques.",
+        "Ejecutar revisión y Quality Gate.",
+        "Exportar la versión aprobada."
+      ],
+      "source_ids": [
+        "src-770551d6a859"
+      ]
+    },
+    {
+      "id": "h4",
+      "kind": "heading",
+      "text": "Entregables",
+      "level": 1,
+      "locked": true
+    },
+    {
+      "id": "p4",
+      "kind": "paragraph",
+      "text": "Una misma revisión aprobada puede producir Markdown para interoperabilidad, HTML para vista previa, DOCX para edición empresarial y PDF para publicación. Todos los formatos se generan desde la misma especificación estructurada para evitar divergencias entre versiones y mantener una única fuente de verdad documental.",
+      "source_ids": [
+        "src-770551d6a859"
+      ]
+    },
+    {
+      "id": "t1",
+      "kind": "table",
+      "rows": [
+        [
+          "Formato",
+          "Uso principal"
+        ],
+        [
+          "DOCX",
+          "Edición y circulación empresarial"
+        ],
+        [
+          "PDF",
+          "Publicación y archivo"
+        ],
+        [
+          "HTML",
+          "Vista previa y publicación web"
+        ],
+        [
+          "Markdown",
+          "Interoperabilidad y automatización"
+        ]
+      ]
+    },
+    {
+      "id": "h5",
+      "kind": "heading",
+      "text": "Gobernanza y calidad",
+      "level": 1,
+      "locked": true
+    },
+    {
+      "id": "p5",
+      "kind": "paragraph",
+      "text": "El documento no se considera final únicamente porque pueda abrirse. Debe superar controles estructurales, de contenido y de procedencia. Cada guardado genera una revisión identificada mediante hash, y las exportaciones finales se bloquean si existen incidencias críticas. Esta separación permite que el usuario conserve control editorial y evita que una respuesta generativa sea tratada automáticamente como documento aprobado.",
+      "source_ids": [
+        "src-770551d6a859"
+      ]
+    },
+    {
+      "id": "h6",
+      "kind": "heading",
+      "text": "Integración con Binario IA",
+      "level": 1,
+      "locked": true
+    },
+    {
+      "id": "p6",
+      "kind": "paragraph",
+      "text": "La aplicación se integra mediante manifiesto y contratos versionados, manteniendo su motor desacoplado. Workflow Studio puede recibir y entregar una especificación documental estructurada, mientras que el Hub conserva la responsabilidad de autenticación, selección de modelos, navegación y runtime compartido. Este enfoque evita modificar los motores 01–10 y facilita probar Documentos IA como una unidad independiente.",
+      "source_ids": [
+        "src-770551d6a859"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "src-770551d6a859",
+      "title": "base_fuente.txt",
+      "source_type": "user",
+      "locator": "/mnt/data/BINARIO_IA_DOCUMENTOS_IA_V1_RC1/examples/base_fuente.txt",
+      "hash_sha256": "770551d6a859819d2bd272b17ee29d1c1cf1f7eb3ed8d9441e93cc881f24402c",
+      "notes": "Fuente de alcance funcional para la validación."
+    }
+  ],
+  "style": {
+    "name": "Sistema Binario",
+    "font_name": "Aptos",
+    "body_size_pt": 11,
+    "heading_color": "17365D",
+    "accent_color": "2F75B5",
+    "title_centered": true,
+    "body_justified": true,
+    "margins_cm": 2.5,
+    "line_spacing": 1.15,
+    "footer_text": "Sistema Binario · Documentos IA",
+    "include_page_numbers": true
+  },
+  "metadata": {
+    "requires_sources": true,
+    "min_source_coverage": 0.7
+  }
+}
