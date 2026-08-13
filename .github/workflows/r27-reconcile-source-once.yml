@@ -1,0 +1,55 @@
+name: R27 reconcile certified source once
+
+on:
+  push:
+    branches: ['chore/r27-uat-build']
+    paths: ['.github/workflows/r27-reconcile-source-once.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: chore/r27-uat-build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Hydrate only missing certified R26 source
+        run: bash scripts/hydrate_certified_source.sh "$GITHUB_WORKSPACE"
+      - name: Verify certified source parity floors
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('.')
+          spec=json.loads((root/'config/R26_SOURCE_SNAPSHOT_MAP.json').read_text())
+          failures=[]
+          for name,row in spec['sections'].items():
+              p=root/name
+              count=sum(1 for x in p.rglob('*') if x.is_file()) if p.exists() else 0
+              if count < row['files']: failures.append((name,count,row['files']))
+          for name,row in spec['apps'].items():
+              p=root/'apps'/name
+              count=sum(1 for x in p.rglob('*') if x.is_file()) if p.exists() else 0
+              if count < row['files']: failures.append(('apps/'+name,count,row['files']))
+          assert not failures, failures
+          print('Certified source parity floors PASS')
+          PY
+      - name: Preserve R27 conflicts and commit missing source
+        run: |
+          test -z "$(git diff --diff-filter=DM --name-only HEAD)" || {
+            echo 'Hydration modified or deleted tracked R27 files.'
+            git diff --diff-filter=DM --name-status HEAD
+            exit 4
+          }
+          rm -f .github/workflows/r27-reconcile-source-once.yml
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(source): reconcile certified R26 source custody for R27'
+          git push origin HEAD:chore/r27-uat-build
