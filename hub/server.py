@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 
 # Explicit R27 contracts used by regression/source audits. Implementations
-# remain in the hydrated Hub source plus hub.legacy_compat; the entrypoint
-# exposes canonical and historical routes so modular assembly cannot
-# masquerade as lost product capability.
+# remain in the hydrated Hub source plus additive compatibility layers; the
+# entrypoint exposes canonical and historical contracts so modular assembly
+# cannot masquerade as lost product capability.
 R27_HUB_CONTRACT = {
     "canonical_video_condition": 'app["id"]=="05-editor-video-ia"',
     "canonical_video_module": "r26.r26_video_studio.server",
@@ -38,6 +38,14 @@ R27_HUB_CONTRACT = {
     "handoff_context_review": "/api/handoff-context-review",
     "workflow_recovery": "/api/workflow-recovery/startup",
     "workflow_restore": "/api/workflow-runs/restore",
+    "workspace_detail_ui": "/workspace-detail",
+    "decision_center_ui": "/decision-center",
+    "project_intelligence_ui": "/project-intelligence",
+    "project_memory_ui": "/project-memory",
+    "workspace_inspector_ui": "/workspace-inspector",
+    "context_lineage_ui": "/context-lineage",
+    "impact_ui": "/impact",
+    "impact_decide": "impact/decide",
 }
 
 ROOT_PARTS = Path(__file__).resolve().parent
@@ -56,3 +64,5 @@ exec(compile(source, str(__file__) + "::hydrated", "exec"), globals(), globals()
 # are intercepted before generic handlers swallow them.
 from hub.legacy_compat import install as _install_legacy_compat
 _install_legacy_compat(Handler, ROOT, manifests)
+from hub.legacy_ui_compat import install as _install_legacy_ui_compat
+_install_legacy_ui_compat(Handler, ROOT)
