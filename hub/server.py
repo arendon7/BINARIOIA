@@ -3,6 +3,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+# Historical identity is retained strictly as a compatibility contract for
+# R23-R25 diagnostics/recovery. It is not the current R27 product version.
+HISTORICAL_RELEASE_COMPAT = {
+    "service_id": "binario-hub-v0251a1",
+    "release": "0.25.1-a1 R25 Product Reconciliation + Social Clipper",
+}
+
 # Explicit R27 contracts used by regression/source audits. Implementations
 # remain in the hydrated Hub source plus additive compatibility layers; the
 # entrypoint exposes canonical and historical contracts so modular assembly
