@@ -1,0 +1,44 @@
+{
+  "skills": [
+    {
+      "id": "intake",
+      "enabled": true
+    },
+    {
+      "id": "provenance",
+      "enabled": true
+    },
+    {
+      "id": "scaffold",
+      "enabled": true
+    },
+    {
+      "id": "structured-blocks",
+      "enabled": true
+    },
+    {
+      "id": "revision",
+      "enabled": true
+    },
+    {
+      "id": "quality-gate",
+      "enabled": true
+    },
+    {
+      "id": "markdown",
+      "enabled": true
+    },
+    {
+      "id": "html",
+      "enabled": true
+    },
+    {
+      "id": "docx",
+      "enabled": true
+    },
+    {
+      "id": "pdf",
+      "enabled": true
+    }
+  ]
+}

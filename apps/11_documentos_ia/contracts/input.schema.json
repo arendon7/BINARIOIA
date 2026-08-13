@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "required": [
+    "title"
+  ],
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "blocks": {
+      "type": "array"
+    },
+    "sources": {
+      "type": "array"
+    }
+  }
+}

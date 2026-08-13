@@ -1,0 +1,9 @@
+{
+  "schema":"sbia-workflow-node-1.0",
+  "id":"documents-ia.generate",
+  "label":"Documentos IA",
+  "engine":"documents-ia",
+  "inputs":{"document":"application/vnd.sbia.document+json"},
+  "outputs":{"document":"application/vnd.sbia.document+json","quality":"application/json"},
+  "contracts":["sbia-flow-1.2","sbia-interop-1.2"]
+}

@@ -1,0 +1,12 @@
+{
+  "cases": [
+    "quality-pass",
+    "quality-block",
+    "markdown",
+    "html",
+    "docx",
+    "pdf",
+    "revision-hash",
+    "provenance"
+  ]
+}

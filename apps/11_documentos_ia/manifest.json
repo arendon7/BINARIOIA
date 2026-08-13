@@ -1,0 +1,52 @@
+{
+  "schema": "sbia-app-1.0",
+  "number": 11,
+  "id": "11-documentos-ia",
+  "name": "Documentos IA",
+  "version": "1.1 / v0.12.0",
+  "description": "Fábrica documental estructurada con fuentes hash, bloques, revisión, Quality Gate y exportación Markdown/HTML/DOCX/PDF.",
+  "category": "Documentos",
+  "runtime_profile": "documents",
+  "engine_type": "service",
+  "entrypoint": "documentos_ia/service.py",
+  "ui": "ui/documentos_ia.html",
+  "special_service": {
+    "port": 8775,
+    "module": "documentos_ia.service",
+    "port_policy": "preferred_with_dynamic_fallback"
+  },
+  "inputs": [
+    {
+      "id": "project",
+      "label": "Proyecto documental",
+      "type": "document",
+      "required": false
+    }
+  ],
+  "skills": [
+    "intake",
+    "provenance",
+    "scaffold",
+    "structured-blocks",
+    "revision",
+    "quality-gate",
+    "markdown",
+    "html",
+    "docx",
+    "pdf"
+  ],
+  "native_pro": {
+    "engine": true,
+    "skills": true,
+    "docs": true,
+    "knowledge": true,
+    "contracts": true,
+    "evaluations": true,
+    "security": true,
+    "traceability": true,
+    "methodology": true,
+    "deliverables": true,
+    "tests": true
+  },
+  "release": "0.12.0 R12"
+}
