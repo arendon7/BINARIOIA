@@ -1,0 +1,100 @@
+(() => {
+  "use strict";
+
+  const TRACKS = [
+    ["video", "Video principal"],
+    ["broll", "B-roll / video"],
+    ["images", "Imágenes / logos"],
+    ["key_ideas", "Ideas clave"],
+    ["subtitles", "Subtítulos"],
+    ["music", "Música"],
+    ["voiceover", "Voz / audio externo"],
+  ];
+  const VISUAL_TRACKS = new Set(["video", "broll", "images"]);
+  const AUDIO_TRACKS = new Set(["music", "voiceover"]);
+  const AUDIO_CAPABLE_TRACKS = new Set(["video", "broll", "music", "voiceover"]);
+  const uid = p => `${p}_${Math.random().toString(36).slice(2, 10)}`;
+  const $ = id => document.getElementById(id);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const clone = x => JSON.parse(JSON.stringify(x));
+  const fmt = s => {
+    s = Math.max(0, Number(s) || 0);
+    const m = Math.floor(s / 60), sec = s - m * 60;
+    return `${String(m).padStart(2, "0")}:${sec.toFixed(2).padStart(5, "0")}`;
+  };
+  const escapeHtml = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  const escapeAttr = escapeHtml;
+
+  async function apiJson(path, options = {}) {
+    const response = await fetch(path, options);
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || payload.error || `HTTP ${response.status}`);
+    return payload;
+  }
+
+  function baseTransform() {
+    return {x: 0.5, y: 0.5, scale: 1, rotation: 0, crop: {top: 0, right: 0, bottom: 0, left: 0}, fit: "contain"};
+  }
+  function baseTransitions() {
+    return {in: {type: "none", duration: 0}, out: {type: "none", duration: 0}};
+  }
+  function baseColor() { return {brightness:0, contrast:1, saturation:1, gamma:1, temperature:0, tint:0, preset:"natural"}; }
+  function baseTextStyle(trackKind="subtitles") { return {preset:"clean_white", font_scale:1, position:trackKind === "key_ideas" ? "top" : "bottom"}; }
+  const COLOR_PRESETS = {
+    natural:{brightness:0,contrast:1,saturation:1,gamma:1,temperature:0,tint:0},
+    vivid:{brightness:.02,contrast:1.10,saturation:1.20,gamma:1.0,temperature:.02,tint:0},
+    warm:{brightness:.01,contrast:1.04,saturation:1.08,gamma:1.0,temperature:.35,tint:.03},
+    cool:{brightness:0,contrast:1.04,saturation:1.04,gamma:1.0,temperature:-.32,tint:-.02},
+    mono:{brightness:0,contrast:1.10,saturation:0,gamma:1.0,temperature:0,tint:0},
+    cinematic:{brightness:-.02,contrast:1.14,saturation:.92,gamma:.96,temperature:.12,tint:.05},
+  };
+  function defaultTracks() {
+    return TRACKS.map(([kind, label]) => ({
+      id: uid("track"), kind, label, enabled: kind !== "key_ideas", locked: kind === "subtitles", muted: false, items: [],
+    }));
+  }
+  function newProject() {
+    const sequence = {
+      id: uid("seq"), name: "Video largo", kind: "long", aspect_ratio: "16:9", duration: 60, playhead: 0,
+      tracks: defaultTracks(), settings: {snap: true, safe_zones: true},
+    };
+    return {
+      schema_version: 26, id: uid("project"), name: "Video nuevo", assets: [], sequences: [sequence], active_sequence_id: sequence.id,
+      settings: {
+        key_ideas_default: false, editing_mode: "simple",
+        audio: {auto_normalize: true, duck_music_under_voice: true, target_lufs: -14, true_peak_db: -1, lra: 11, voice_highpass_hz: 80, voice_denoise: true, voice_compression: true, music_gain: .30, limiter: true},
+        export: {codec: "h264", audio_codec: "aac", preset: "social_high", fps: 30, hardware_acceleration: "auto", quality_label: "Alta · H.264", publish_preset: ""},
+        timeline_edit_mode: "magnetic",
+        transcript: {segments: [], source: null, language: null}, social_clipper: {candidates: []}, scene_strip: {asset_id: null, scenes: [], collapsed: false}, silence_cleanup: {asset_id:null, ranges:[], total_silence:0, analyzed:false}, focus_mode:false, storage: {},
+      },
+    };
+  }
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem("binario_video_r26_project")); } catch { return null; }
+  }
+
+  // R27 product-shell contract: Importar → Transcribir → Clips → Renderizar.
+  const EDITING_MODE_KEY = "binario_video_r26_editing_mode";
+  async function persistEditingMode(mode) {
+    mode = mode === "pro" ? "pro" : "simple";
+    localStorage.setItem(EDITING_MODE_KEY, mode);
+    state.settings.editing_mode = mode;
+    try { await apiJson("/api/preferences", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({video_editing_mode:mode})}); } catch {}
+    dirty(); syncControls();
+    return mode;
+  }
+  async function restoreEditingMode() {
+    let mode = localStorage.getItem(EDITING_MODE_KEY);
+    try { const p = await apiJson("/api/preferences"); mode = p.video_editing_mode || mode; } catch {}
+    state.settings.editing_mode = mode === "pro" ? "pro" : "simple";
+    localStorage.setItem(EDITING_MODE_KEY, state.settings.editing_mode);
+  }
+  async function attachRequestedProject() {
+    const projectId = new URLSearchParams(location.search).get("project");
+    if (!projectId) return false;
+    try {
+      const r = await apiJson("/api/project/load", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({project_id:projectId})});
+      state = r.project; ensureShape(); selected = null;
+      const st = storage(); st.project_id = r.requested_project_id || projectId; if (r.path) st.path = r.path;
+      localStorage.setItem("binario_video_r26_project", JSON.stringify(state));

@@ -1,0 +1,197 @@
+        if path=="/api/system/costs/rates":
+            from common.cost_tracker import get_rates
+            return self._json(get_rates())
+        if path=="/api/system/report":
+            from common.report_store import generate_system_report
+            return self._json(generate_system_report(query.get("workspace_id")))
+        if path=="/api/system/tasks":
+            from common.task_store import list_tasks
+            return self._json(list_tasks(workspace_id=query.get("workspace_id"),status=query.get("status")))
+        if path=="/api/system/resources":
+            from common.resource_store import resource_summary
+            return self._json(resource_summary())
+        if path=="/api/system/release-candidates":
+            from common.release_candidate_store import list_release_candidates
+            return self._json(list_release_candidates(status=query.get("status")))
+        if path.startswith("/api/system/release-candidates/") and path.endswith("/verify"):
+            from common.release_candidate_store import verify_release_candidate
+            cid=path.split("/")[4]
+            try:return self._json(verify_release_candidate(cid))
+            except Exception as exc:return self._json({"error":str(exc)},404)
+        if path=="/api/system/observability":
+            from common.observability_store import observability_summary
+            return self._json(observability_summary())
+        if path=="/api/system/security":
+            from common.security_posture import security_summary
+            return self._json(security_summary())
+        if path=="/api/system/maintenance":
+            from common.maintenance_store import maintenance_summary
+            return self._json(maintenance_summary())
+        if path=="/api/system/migrations":
+            from common.migration_store import migration_summary
+            return self._json(migration_summary())
+        if path=="/api/system/drift":
+            from common.drift_detector import drift_summary
+            return self._json(drift_summary())
+        if path=="/api/system/certification":
+            from common.certification_store import certification_summary
+            return self._json(certification_summary())
+        if path=="/api/system/artifacts":
+            from common.artifact_store import artifact_summary
+            return self._json(artifact_summary(query.get("workspace_id")))
+        if path=="/api/system/dependencies":
+            from common.dependency_store import dependency_summary
+            return self._json(dependency_summary())
+        if path=="/api/system/data-quality":
+            from common.data_quality_store import data_quality_summary
+            return self._json(data_quality_summary())
+        if path=="/api/system/readiness":
+            from common.readiness_store import readiness_summary
+            return self._json(readiness_summary())
+        if path=="/api/system/roadmap":
+            from common.roadmap_store import roadmap_summary
+            return self._json(roadmap_summary())
+        if path=="/api/system/change-log":
+            from common.change_log_store import change_log_summary
+            return self._json(change_log_summary())
+        if path=="/api/system/sla":
+            from common.sla_store import sla_summary
+            return self._json(sla_summary())
+        if path=="/api/system/health-history":
+            from common.health_history_store import health_history
+            return self._json(health_history(limit=int(query.get("limit","120"))))
+        if path=="/api/system/retention":
+            from common.retention_store import retention_summary
+            return self._json(retention_summary())
+        if path=="/api/system/integrity":
+            from common.integrity_store import integrity_summary
+            return self._json(integrity_summary())
+        if path=="/api/system/ownership":
+            from common.ownership_store import ownership_summary
+            return self._json(ownership_summary())
+        if path=="/api/system/recovery":
+            from common.recovery_store import recovery_summary
+            return self._json(recovery_summary())
+        if path=="/api/system/changelog":
+            from common.change_log_store import change_log_summary
+            return self._json(change_log_summary())
+        if path=="/api/system/audit/export":
+            from common.audit_log import export_events
+            return self._json(export_events(workspace_id=query.get("workspace_id")))
+        if path=="/api/system/configuration":
+            from common.configuration_store import configuration_summary
+            return self._json(configuration_summary())
+        if path=="/api/system/alerts":
+            from common.alert_store import list_alerts
+            return self._json(list_alerts(status=query.get("status")))
+        if path=="/api/system/compliance":
+            from common.compliance_store import compliance_summary
+            return self._json(compliance_summary())
+        if path=="/api/system/lineage":
+            from common.lineage_store import lineage_summary
+            return self._json(lineage_summary(query.get("workspace_id")))
+        if path=="/api/system/reconciliation":
+            from common.reconciliation_store import reconciliation_summary
+            return self._json(reconciliation_summary())
+        if path=="/api/system/version-policy":
+            from common.version_policy import version_policy_summary
+            return self._json(version_policy_summary())
+        if path=="/api/system/version-policy/evidence":
+            from common.version_policy import version_policy_evidence
+            return self._json(version_policy_evidence())
+        if path=="/api/system/reconciliation/status":
+            from common.product_reconciliation import reconciliation_status
+            return self._json(reconciliation_status())
+        if path=="/api/system/reconciliation/apps":
+            from common.product_reconciliation import app_reconciliation_matrix
+            return self._json(app_reconciliation_matrix())
+        if path=="/api/system/reconciliation/historical":
+            from common.product_reconciliation import historical_requirements_status
+            return self._json(historical_requirements_status())
+        if path=="/api/system/reconciliation/knowledge":
+            from common.product_reconciliation import knowledge_audit_status
+            return self._json(knowledge_audit_status())
+        if path=="/api/system/reconciliation/certification":
+            from common.product_reconciliation import certification_status
+            return self._json(certification_status())
+        if path.startswith("/api/files/"):
+            rel=path[len("/api/files/"):]
+            p=(ROOT/rel).resolve()
+            try:p.relative_to(ROOT)
+            except ValueError:return self._json({"error":"Ruta fuera del proyecto"},403)
+            if not p.exists():return self._json({"error":"No existe"},404)
+            if p.is_dir():return self._json([x.name for x in p.iterdir()])
+            return self._file(p)
+        if path=="/api/workflow":return self._json(workflow_list())
+        if path=="/api/projects/repair":
+            from common.project_center import repair_existing_projects
+            return self._json(repair_existing_projects())
+        if path=="/api/legacy-state":
+            from common.legacy_state import legacy_state_summary
+            return self._json(legacy_state_summary())
+        if path=="/api/app-factory/legacy":
+            from common.app_factory_governance import legacy_factory_state
+            return self._json(legacy_factory_state())
+        if path=="/api/run-graph":
+            from common.run_graph import graph_summary
+            return self._json(graph_summary(query.get("workspace_id")))
+        if path=="/api/system/context":
+            from common.context_store import context_summary
+            return self._json(context_summary(query.get("workspace_id")))
+        if path=="/api/system/context/graph":
+            from common.context_store import context_graph
+            return self._json(context_graph(query.get("workspace_id")))
+        if path=="/api/system/context/export":
+            from common.context_store import export_context
+            return self._json(export_context(query.get("workspace_id")))
+        if path=="/api/system/context/obsidian":
+            from common.context_store import obsidian_summary
+            return self._json(obsidian_summary(query.get("workspace_id")))
+        if path=="/api/system/context/graphfy":
+            from common.context_store import graphfy_summary
+            return self._json(graphfy_summary(query.get("workspace_id")))
+        if path=="/api/system/models":
+            from common.model_registry import model_registry_summary
+            return self._json(model_registry_summary())
+        if path=="/api/system/models/costs":
+            from common.model_registry import model_cost_summary
+            return self._json(model_cost_summary())
+        if path=="/api/system/models/routing":
+            from common.model_registry import routing_summary
+            return self._json(routing_summary())
+        if path=="/api/system/models/keys":
+            from common.model_registry import key_status_summary
+            return self._json(key_status_summary())
+        if path=="/api/system/projects/index":
+            from common.project_index import index_summary
+            return self._json(index_summary())
+        if path=="/api/system/projects/files":
+            from common.project_index import project_files_summary
+            return self._json(project_files_summary(query.get("project_id")))
+        if path=="/api/system/projects/search":
+            from common.project_index import project_search
+            return self._json(project_search(query.get("q",""),query.get("project_id")))
+        if path=="/api/system/agent-training":
+            from common.agent_training_registry import training_summary
+            return self._json(training_summary(query.get("project_id")))
+        if path=="/api/system/video":
+            from common.video_product_store import video_product_summary
+            return self._json(video_product_summary())
+        if path=="/api/system/video/projects":
+            from common.video_product_store import video_projects_summary
+            return self._json(video_projects_summary())
+        if path=="/api/system/video/clipper":
+            from common.video_product_store import clipper_summary
+            return self._json(clipper_summary())
+        if path=="/api/system/video/whisper":
+            from common.video_product_store import whisper_summary
+            return self._json(whisper_summary())
+        if path=="/api/system/video/runtime":
+            from common.video_product_store import video_runtime_summary
+            return self._json(video_runtime_summary())
+        if path=="/api/system/video/editor":
+            from common.video_product_store import video_editor_summary
+            return self._json(video_editor_summary())
+        if path=="/api/system/video/storage":
+            from common.video_product_store import video_storage_summary
+            return self._json(video_storage_summary())

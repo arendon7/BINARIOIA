@@ -1,0 +1,41 @@
+name: One-shot certified R26 source hydration
+
+on:
+  push:
+    branches: ['chore/r27-import-full-source']
+    paths: ['.github/workflows/hydrate-certified-source-once.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  hydrate-once:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: chore/r27-import-full-source
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Hydrate only missing certified source
+        run: bash scripts/hydrate_certified_source.sh "$GITHUB_WORKSPACE"
+      - name: Ensure R27 tracked files were not modified or deleted
+        run: |
+          test -z "$(git diff --diff-filter=DM --name-only HEAD)" || {
+            echo 'Hydration attempted to modify/delete tracked R27 work.'
+            git diff --diff-filter=DM --name-status HEAD
+            exit 4
+          }
+      - name: Commit missing certified paths
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No missing source paths remained.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(source): hydrate remaining certified R26 source paths'
+          git push origin HEAD:chore/r27-import-full-source

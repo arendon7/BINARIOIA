@@ -1,0 +1,107 @@
+                        safe_sequence = _safe_asset_name(sequence.name.replace("/", "-") or "clip")
+                        output = _unique_path(Path(disk_project["folders"]["exports"]), f"{safe_project}-{safe_sequence}.mp4")
+                        plan_path = Path(disk_project["folders"]["autosave"]) / f"render-plan-{sequence_id}.json"
+                        plan_path.write_text(json.dumps({"project": video_project.to_dict(), "render_plan": build_render_plan(video_project, sequence_id).to_dict()}, ensure_ascii=False, indent=2), encoding="utf-8")
+                        def run(progress, sid=sequence_id, pp=plan_path, out=output):
+                            bridge = bridge_status()
+                            if bridge.get("r25_render_command"):
+                                return run_external_r25(pp, out, progress=progress)
+                            return render_native(video_project, sid, Path(disk_project["folders"]["assets"]), out, progress=progress)
+                        jobs.append(render_jobs.start(run, label=f"{video_project.name} · {sequence.name}"))
+                    return self._json(202, {"ok": True, "jobs": jobs, "count": len(jobs)})
+                if route == "/api/timeline/ripple":
+                    payload = body.get("project")
+                    if not isinstance(payload, dict): raise ValueError("project must be object")
+                    rows = body.get("ranges") or []
+                    if not isinstance(rows, list): raise ValueError("ranges must be list")
+                    project = VideoProject.from_dict(payload)
+                    sequence_id = str(body.get("sequence_id") or project.active_sequence_id)
+                    result = apply_ripple(project, sequence_id, rows)
+                    return self._json(200, {"ok": True, **{k:(v.to_dict() if k=="project" else v) for k,v in result.items()}})
+                if route == "/api/timeline/move":
+                    payload = body.get("project")
+                    if not isinstance(payload, dict): raise ValueError("project must be object")
+                    project = VideoProject.from_dict(payload)
+                    sequence_id = str(body.get("sequence_id") or project.active_sequence_id)
+                    result = move_item(project, sequence_id, str(body.get("item_id", "")), float(body.get("new_start", 0)), mode=str(body.get("mode", "magnetic")), threshold=float(body.get("threshold", .18)), ripple_scope=str(body.get("ripple_scope", "all")))
+                    return self._json(200, {"ok": True, **{k:(v.to_dict() if k=="project" else v) for k,v in result.items()}})
+                if route == "/api/export/preset":
+                    payload = body.get("project")
+                    if not isinstance(payload, dict): raise ValueError("project must be object")
+                    project = VideoProject.from_dict(payload)
+                    sequence_id = str(body.get("sequence_id") or project.active_sequence_id)
+                    result = apply_export_preset(project, sequence_id, str(body.get("preset_id", "")))
+                    return self._json(200, {"ok": True, "project": result["project"].to_dict(), "preset": result["preset"]})
+                if route == "/api/transcript/import":
+                    fmt = str(body.get("format", "json")).lower()
+                    if fmt in {"srt", "vtt"}:
+                        text = str(body.get("text", ""))
+                        segments = parse_srt(text) if fmt == "srt" else parse_vtt(text)
+                    else:
+                        rows = body.get("segments") or []
+                        if not isinstance(rows, list):
+                            raise ValueError("segments must be list")
+                        segments = normalize_segments(rows)
+                    return self._json(200, {"ok": True, "segments": [x.to_dict() for x in segments]})
+                if route == "/api/transcript/transcribe":
+                    project_id = str(body.get("project_id", ""))
+                    filename = str(body.get("filename", ""))
+                    target = _project_asset(projects_root, project_id, filename)
+                    project = find_project(projects_root, project_id)
+                    output = Path(project["folders"]["autosave"]) / "transcript_r26.json"
+                    segments = transcribe(target, output, language=(str(body.get("language")) if body.get("language") else None))
+                    return self._json(200, {"ok": True, "segments": segments, "path": str(output)})
+                if route == "/api/social-clips/candidates":
+                    rows = body.get("segments") or []
+                    if not isinstance(rows, list):
+                        raise ValueError("segments must be list")
+                    candidates = generate_candidates(rows, target_seconds=float(body.get("target_seconds", 35)), min_seconds=float(body.get("min_seconds", 15)), max_seconds=float(body.get("max_seconds", 60)), limit=int(body.get("limit", 8)))
+                    return self._json(200, {"ok": True, "candidates": [x.to_dict() for x in candidates]})
+                if route == "/api/project/export-plan":
+                    project_id = str(body.get("project_id", ""))
+                    project = find_project(projects_root, project_id)
+                    payload = body.get("payload")
+                    if not isinstance(payload, dict):
+                        raise ValueError("payload must be object")
+                    name = _safe_asset_name(str(body.get("filename", "render_plan.json")))
+                    if not name.lower().endswith(".json"):
+                        name += ".json"
+                    target = _unique_path(Path(project["folders"]["exports"]), name)
+                    target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+                    return self._json(201, {"ok": True, "path": str(target)})
+                if route == "/api/project/open-folder":
+                    target = project_target(projects_root, str(body.get("project_id", "")), str(body.get("target", "root")))
+                    return self._json(200, open_in_file_manager(target))
+                return self._json(404, {"error": "not_found"})
+            except (ValueError, KeyError, json.JSONDecodeError) as exc:
+                return self._json(400, {"error": "invalid_request", "detail": str(exc)})
+            except Exception as exc:
+                return self._json(500, {"error": "internal_error", "detail": str(exc)})
+
+        def log_message(self, fmt, *args):
+            return
+
+    return Handler
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--host", default="127.0.0.1")
+    ap.add_argument("--port", type=int, default=8795)
+    ap.add_argument("--projects-root", type=Path, default=canonical_projects_root())
+    args = ap.parse_args()
+    if args.host not in {"127.0.0.1", "localhost", "::1"}:
+        raise SystemExit("Video Studio must bind to loopback only")
+    server = ThreadingHTTPServer((args.host, args.port), handler_factory(args.projects_root.expanduser().resolve()))
+    print(json.dumps({"status": "ready", "url": f"http://{args.host}:{server.server_port}", "projects_root": str(args.projects_root.expanduser().resolve())}), flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

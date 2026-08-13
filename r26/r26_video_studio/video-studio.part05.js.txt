@@ -1,0 +1,100 @@
+  function renderInspector() {
+    const out = $("selectedInspector");
+    if (!selected) { out.innerHTML = "<strong>Elemento seleccionado</strong><div class='empty-inspector'>Selecciona un elemento del timeline.</div>"; $("inspectorSubtitle").textContent = "Proyecto"; return; }
+    const [t, i] = findItem(selected); if (!i) { selected = null; return renderInspector(); } ensureItemShape(i); $("inspectorSubtitle").textContent = t.label;
+    const visual = VISUAL_TRACKS.has(i.track) ? `
+      <div class="inspector-subhead">Color</div>
+      <label class="inspector-field"><span>Preset</span><select data-color="preset">${colorPresetOptions(i.color.preset)}</select></label>
+      <label class="inspector-field"><span>Brillo</span><input data-color="brightness" type="number" min="-1" max="1" step="0.02" value="${i.color.brightness}"></label>
+      <label class="inspector-field"><span>Contraste</span><input data-color="contrast" type="number" min="0" max="3" step="0.05" value="${i.color.contrast}"></label>
+      <label class="inspector-field"><span>Saturación</span><input data-color="saturation" type="number" min="0" max="4" step="0.05" value="${i.color.saturation}"></label>
+      <label class="inspector-field"><span>Gamma</span><input data-color="gamma" type="number" min="0.1" max="5" step="0.05" value="${i.color.gamma}"></label>
+      <label class="inspector-field"><span>Temperatura</span><input data-color="temperature" type="number" min="-1" max="1" step="0.05" value="${i.color.temperature}"></label>
+      <label class="inspector-field"><span>Tinte</span><input data-color="tint" type="number" min="-1" max="1" step="0.05" value="${i.color.tint}"></label>
+      <button class="btn small ghost wide" data-reset-color>Restablecer color</button>
+      <div class="inspector-subhead">Transformación</div>
+      <label class="inspector-field"><span>Posición X</span><input data-transform="x" type="number" step="0.01" min="-2" max="3" value="${i.transform.x}"></label>
+      <label class="inspector-field"><span>Posición Y</span><input data-transform="y" type="number" step="0.01" min="-2" max="3" value="${i.transform.y}"></label>
+      <label class="inspector-field"><span>Escala</span><input data-transform="scale" type="number" step="0.05" min="0.01" max="20" value="${i.transform.scale}"></label>
+      <label class="inspector-field"><span>Rotación °</span><input data-transform="rotation" type="number" step="1" value="${i.transform.rotation}"></label>
+      <label class="inspector-field"><span>Ajuste</span><select data-transform="fit"><option ${i.transform.fit === "contain" ? "selected" : ""}>contain</option><option ${i.transform.fit === "cover" ? "selected" : ""}>cover</option><option ${i.transform.fit === "stretch" ? "selected" : ""}>stretch</option></select></label>
+      <div class="inspector-subhead">Crop (%)</div>
+      ${["top", "right", "bottom", "left"].map(side => `<label class="inspector-field"><span>${side}</span><input data-crop="${side}" type="number" step="1" min="0" max="95" value="${Math.round((i.transform.crop[side] || 0) * 100)}"></label>`).join("")}
+      <div class="inspector-subhead">Transiciones</div>
+      <label class="inspector-field"><span>Entrada</span><select data-transition="in.type">${transitionOptions(i.transitions.in.type)}</select></label>
+      <label class="inspector-field"><span>Duración</span><input data-transition="in.duration" type="number" min="0" max="${i.duration}" step="0.1" value="${i.transitions.in.duration || 0}"></label>
+      <label class="inspector-field"><span>Salida</span><select data-transition="out.type">${transitionOptions(i.transitions.out.type)}</select></label>
+      <label class="inspector-field"><span>Duración</span><input data-transition="out.duration" type="number" min="0" max="${i.duration}" step="0.1" value="${i.transitions.out.duration || 0}"></label>
+      <div class="inspector-subhead">Keyframes</div><button class="btn small ghost wide" data-add-keyframe>◆ Guardar estado en cursor</button>
+      <div class="keyframe-list">${i.keyframes.filter(k => k.transform).length ? i.keyframes.map((k, idx) => k.transform ? `<div class="keyframe-row"><span>${fmt(k.time)}</span><span>x ${Number(k.transform?.x ?? .5).toFixed(2)} · y ${Number(k.transform?.y ?? .5).toFixed(2)} · ${Number(k.transform?.scale ?? 1).toFixed(2)}×</span><button class="transcript-remove" data-remove-keyframe="${idx}">×</button></div>` : "").join("") : "<div class='empty-inspector'>Sin keyframes visuales.</div>"}</div>` : "";
+    const textStyle = ["key_ideas", "subtitles"].includes(i.track) ? `<div class="inspector-subhead">Estilo de texto</div><label class="inspector-field"><span>Preset</span><select data-text-style="preset">${textPresetOptions(i.text_style.preset)}</select></label><label class="inspector-field"><span>Tamaño</span><input data-text-style="font_scale" type="number" min="0.5" max="3" step="0.1" value="${i.text_style.font_scale}"></label><label class="inspector-field"><span>Posición</span><select data-text-style="position"><option value="bottom" ${i.text_style.position==="bottom"?"selected":""}>Abajo</option><option value="middle" ${i.text_style.position==="middle"?"selected":""}>Centro</option><option value="top" ${i.text_style.position==="top"?"selected":""}>Arriba</option></select></label><div class="caption-style-preview ${i.text_style.preset}">${escapeHtml(i.text || "Vista previa")}</div><button class="btn small ghost wide" data-apply-textstyle-all>Aplicar estilo a toda la pista</button>` : "";
+    const audioAutomation = AUDIO_CAPABLE_TRACKS.has(i.track) ? `<div class="inspector-subhead">Automatización de volumen</div><button class="btn small ghost wide" data-add-audio-keyframe>◆ Volumen actual en cursor</button><div class="keyframe-list">${i.keyframes.filter(k => k.volume != null).length ? i.keyframes.map((k,idx) => k.volume != null ? `<div class="audio-keyframe-row"><span>${fmt(k.time)}</span><input data-audio-keyframe="${idx}" type="number" min="0" max="4" step="0.05" value="${Number(k.volume).toFixed(2)}"><button class="transcript-remove" data-remove-audio-keyframe="${idx}">×</button></div>` : "").join("") : "<div class='empty-inspector'>Sin automatización; volumen constante.</div>"}</div>` : "";
+    out.innerHTML = `<strong>${escapeHtml(i.label || i.text || "Elemento")}</strong>
+      <label class="inspector-field"><span>Inicio</span><input data-prop="start" type="number" step="0.05" value="${i.start.toFixed(2)}"></label>
+      <label class="inspector-field"><span>Duración</span><input data-prop="duration" type="number" step="0.05" value="${i.duration.toFixed(2)}"></label>
+      <label class="inspector-field"><span>Entrada fuente</span><input data-prop="source_in" type="number" step="0.05" value="${Number(i.source_in || 0).toFixed(2)}"></label>
+      <label class="inspector-field"><span>Volumen</span><input data-prop="volume" type="number" step="0.05" min="0" max="4" value="${i.volume}"></label>
+      <label class="inspector-field"><span>Opacidad</span><input data-prop="opacity" type="number" step="0.05" min="0" max="1" value="${i.opacity}"></label>
+      ${["key_ideas", "subtitles"].includes(i.track) ? `<label class="inspector-field"><span>Texto</span><input data-prop="text" value="${escapeAttr(i.text || "")}"></label>` : ""}
+      <label class="switch-row"><span><b>Visible</b></span><input data-prop="enabled" type="checkbox" ${i.enabled ? "checked" : ""}></label>${visual}${textStyle}${audioAutomation}`;
+    out.querySelectorAll("[data-prop]").forEach(input => input.onchange = () => {
+      snapshot(); const p = input.dataset.prop; if (p === "enabled") i[p] = input.checked; else if (p === "text") i[p] = input.value; else i[p] = Number(input.value);
+      i.start = clamp(i.start, 0, seq().duration - .05); i.duration = clamp(i.duration, .05, seq().duration - i.start); i.opacity = clamp(i.opacity, 0, 1); i.volume = clamp(i.volume, 0, 4); i.source_in = Math.max(0, i.source_in || 0);
+      if (i.track === "subtitles" && i.metadata?.transcript_segment_id && p === "text") { const sg = transcript().segments.find(s => s.id === i.metadata.transcript_segment_id); if (sg) sg.text = i.text; }
+      renderAll();
+    });
+    out.querySelectorAll("[data-transform]").forEach(input => input.onchange = () => { snapshot(); const key = input.dataset.transform; i.transform[key] = key === "fit" ? input.value : Number(input.value); renderAll(); });
+    out.querySelectorAll("[data-crop]").forEach(input => input.onchange = () => { snapshot(); i.transform.crop[input.dataset.crop] = clamp(Number(input.value) / 100, 0, .95); renderAll(); });
+    out.querySelectorAll("[data-transition]").forEach(input => input.onchange = () => { snapshot(); const [edge, key] = input.dataset.transition.split("."); i.transitions[edge][key] = key === "duration" ? clamp(Number(input.value), 0, i.duration) : input.value; renderAll(); });
+    out.querySelectorAll("[data-color]").forEach(input => input.onchange = () => { snapshot(); const key=input.dataset.color; if(key==="preset") applyColorPreset(i,input.value); else { i.color[key]=Number(input.value); i.color.preset="natural"; } renderAll(); });
+    out.querySelector("[data-reset-color]")?.addEventListener("click",()=>{ snapshot(); i.color=baseColor(); renderAll(); });
+    out.querySelectorAll("[data-text-style]").forEach(input=>input.onchange=()=>{ snapshot(); const key=input.dataset.textStyle; i.text_style[key]=key==="font_scale"?clamp(Number(input.value),.5,3):input.value; renderAll(); });
+    out.querySelector("[data-apply-textstyle-all]")?.addEventListener("click",()=>{ snapshot(); const st=clone(i.text_style); for(const row of t.items){ ensureItemShape(row); row.text_style=clone(st); } renderAll(); toast("Estilo aplicado a toda la pista"); });
+    out.querySelector("[data-add-keyframe]")?.addEventListener("click", addKeyframe);
+    out.querySelector("[data-add-audio-keyframe]")?.addEventListener("click", addAudioKeyframe);
+    out.querySelectorAll("[data-remove-keyframe]").forEach(b => b.onclick = () => { snapshot(); i.keyframes.splice(Number(b.dataset.removeKeyframe), 1); renderAll(); });
+    out.querySelectorAll("[data-audio-keyframe]").forEach(input => input.onchange = () => { snapshot(); const k=i.keyframes[Number(input.dataset.audioKeyframe)]; if (k) k.volume=clamp(Number(input.value),0,4); renderAll(); });
+    out.querySelectorAll("[data-remove-audio-keyframe]").forEach(b => b.onclick = () => { snapshot(); const idx=Number(b.dataset.removeAudioKeyframe); const k=i.keyframes[idx]; if (k?.transform) delete k.volume; else i.keyframes.splice(idx,1); renderAll(); });
+  }
+
+  function currentItemAt(trackKind) { const t = track(trackKind); if (!t || !t.enabled) return null; return [...t.items].reverse().find(i => i.enabled && seq().playhead >= i.start && seq().playhead < i.start + i.duration); }
+  function interpolate(a, b, p) { return a + (b - a) * p; }
+  function effectiveTransform(item) {
+    ensureItemShape(item); const local = seq().playhead - item.start; const frames = [...item.keyframes].sort((a, b) => a.time - b.time); if (!frames.length) return item.transform;
+    let prev = {time: 0, transform: item.transform}, next = null;
+    for (const f of frames) { if (f.time <= local) prev = f; else { next = f; break; } }
+    if (!next) return prev.transform || item.transform;
+    const p = clamp((local - prev.time) / Math.max(.001, next.time - prev.time), 0, 1), at = prev.transform || item.transform, bt = next.transform || at;
+    const crop = {}; for (const side of ["top", "right", "bottom", "left"]) crop[side] = interpolate(Number(at.crop?.[side] || 0), Number(bt.crop?.[side] || 0), p);
+    return {x: interpolate(Number(at.x ?? .5), Number(bt.x ?? .5), p), y: interpolate(Number(at.y ?? .5), Number(bt.y ?? .5), p), scale: interpolate(Number(at.scale ?? 1), Number(bt.scale ?? 1), p), rotation: interpolate(Number(at.rotation || 0), Number(bt.rotation || 0), p), crop, fit: p < .5 ? (at.fit || "contain") : (bt.fit || "contain")};
+  }
+  function transitionVisual(item, transform) {
+    const local = clamp(seq().playhead - item.start, 0, item.duration), remaining = Math.max(0, item.duration - local);
+    let alpha = Number(item.opacity ?? 1), x = Number(transform.x ?? .5), y = Number(transform.y ?? .5), scale = Number(transform.scale ?? 1);
+    const apply = (tr, progress, entering) => {
+      const type = tr?.type || "none"; if (type === "none") return;
+      const p = clamp(progress, 0, 1), q = entering ? p : 1 - p;
+      if (["fade", "dissolve"].includes(type)) alpha *= q;
+      if (type === "slide_left") x += (entering ? -0.18 * (1 - p) : -0.18 * p);
+      if (type === "slide_right") x += (entering ? 0.18 * (1 - p) : 0.18 * p);
+      if (type === "zoom") scale *= entering ? (0.82 + 0.18 * p) : (1 - 0.18 * p);
+    };
+    const tin = item.transitions?.in, tout = item.transitions?.out;
+    if (tin?.duration > 0 && local < tin.duration) apply(tin, local / tin.duration, true);
+    if (tout?.duration > 0 && remaining < tout.duration) apply(tout, remaining / tout.duration, false);
+    return {...transform, x, y, scale, opacity: clamp(alpha, 0, 1)};
+  }
+
+  function setMediaSource(el, asset) {
+    const url = asset ? mediaUrl(asset) : ""; if (!url) { el.classList.add("hidden"); el.removeAttribute("src"); return; }
+    if (el.dataset.assetId !== asset.id) { el.dataset.assetId = asset.id; el.src = url; }
+    el.classList.remove("hidden");
+  }
+  function syncVideoElement(el, item) {
+    if (!item) return; const desired = Math.max(0, Number(item.source_in || 0) + (seq().playhead - item.start));
+    if (Number.isFinite(el.duration) && desired <= el.duration + .25 && Math.abs((el.currentTime || 0) - desired) > .2) { try { el.currentTime = desired; } catch {} }
+  }
+  function colorCssFilter(item) { ensureItemShape(item); const c=item.color; const bright=Math.max(.05,1+Number(c.brightness||0)); const contrast=Math.max(0,Number(c.contrast??1)); const saturation=Math.max(0,Number(c.saturation??1)); const gamma=Math.max(.1,Number(c.gamma??1)); const temp=Number(c.temperature||0), tint=Number(c.tint||0); const hue=(tint*8)+(temp*3); const sepia=Math.abs(temp)*.12, gammaBright=Math.pow(1/gamma,.22); return `brightness(${bright*gammaBright}) contrast(${contrast}) saturate(${saturation}) sepia(${sepia}) hue-rotate(${hue}deg)`; }
+
+  function applyVisual(el, item) {
+    if (!item) return; const t = transitionVisual(item, effectiveTransform(item)), crop = t.crop || {};

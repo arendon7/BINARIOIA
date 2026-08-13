@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "properties": {
+    "sources": {
+      "type": "array"
+    },
+    "audio_sources": {
+      "type": "array"
+    },
+    "assets": {
+      "type": "array"
+    },
+    "edit": {
+      "type": "object"
+    }
+  }
+}

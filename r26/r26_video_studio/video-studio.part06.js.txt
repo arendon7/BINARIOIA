@@ -1,0 +1,100 @@
+    el.style.left = `${t.x * 100}%`; el.style.top = `${t.y * 100}%`; el.style.inset = "auto"; el.style.width = `${100 * t.scale}%`; el.style.height = `${100 * t.scale}%`;
+    el.style.transform = `translate(-50%,-50%) rotate(${t.rotation || 0}deg)`; el.style.objectFit = t.fit === "stretch" ? "fill" : (t.fit || "contain"); el.style.opacity = String(t.opacity ?? item.opacity ?? 1);
+    el.style.clipPath = `inset(${(crop.top || 0) * 100}% ${(crop.right || 0) * 100}% ${(crop.bottom || 0) * 100}% ${(crop.left || 0) * 100}%)`; el.style.filter=colorCssFilter(item);
+  }
+  function renderPreview() {
+    const key = currentItemAt("key_ideas"), sub = currentItemAt("subtitles"), image = currentItemAt("images"), broll = currentItemAt("broll"), video = currentItemAt("video");
+    $("keyIdeaPreview").classList.toggle("hidden", !key); if (key) $("keyIdeaPreview").textContent = key.text || key.label || "Idea clave";
+    $("subtitlePreview").classList.toggle("hidden", !track("subtitles").enabled); $("subtitlePreview").textContent = sub ? (sub.text || sub.label || "Subtítulo") : "";
+    const mainEl = $("mainPreviewVideo"), brollEl = $("brollPreviewVideo"), imgEl = $("imagePreviewMedia");
+    const mainAsset = video && state.assets.find(a => a.id === video.asset_id), brollAsset = broll && state.assets.find(a => a.id === broll.asset_id), imageAsset = image && state.assets.find(a => a.id === image.asset_id);
+    setMediaSource(mainEl, mainAsset); if (video && mainAsset) { applyVisual(mainEl, video); syncVideoElement(mainEl, video); }
+    setMediaSource(brollEl, brollAsset); if (broll && brollAsset) { applyVisual(brollEl, broll); syncVideoElement(brollEl, broll); }
+    if (imageAsset) { setMediaSource(imgEl, imageAsset); applyVisual(imgEl, image); } else { imgEl.classList.add("hidden"); imgEl.removeAttribute("src"); imgEl.dataset.assetId = ""; }
+    $("imagePreview").classList.add("hidden"); $("placeholderScene").classList.toggle("hidden", !!mainAsset); $("previewStatus").textContent = video ? (video.label || "Video principal") : "Agrega un video principal";
+    const [, selectedItem] = selected ? findItem(selected) : [null, null]; const box = $("transformBox");
+    if (selectedItem && VISUAL_TRACKS.has(selectedItem.track) && seq().playhead >= selectedItem.start && seq().playhead < selectedItem.start + selectedItem.duration) {
+      const t = transitionVisual(selectedItem, effectiveTransform(selectedItem)); box.classList.remove("hidden"); box.style.left = `${t.x * 100}%`; box.style.top = `${t.y * 100}%`; box.style.width = `${100 * t.scale}%`; box.style.height = `${100 * t.scale}%`; box.style.transform = `translate(-50%,-50%) rotate(${t.rotation || 0}deg)`;
+    } else box.classList.add("hidden");
+  }
+
+  function renderTranscript() {
+    const segments = transcript().segments || []; $("transcriptState").textContent = segments.length ? `${segments.length} segmentos` : "sin transcripción";
+    $("transcriptList").innerHTML = segments.length ? segments.map(s => `<div class="transcript-row" data-segment="${s.id}"><div class="transcript-times"><input data-seg-prop="start" type="number" step="0.05" value="${Number(s.start).toFixed(2)}"><input data-seg-prop="end" type="number" step="0.05" value="${Number(s.end).toFixed(2)}"><span><button class="transcript-jump" data-jump="${s.id}" title="Ir al segmento">▶</button><button class="transcript-remove" data-seg-remove="${s.id}" title="Eliminar">×</button></span></div><textarea data-seg-prop="text">${escapeHtml(s.text)}</textarea></div>`).join("") : "<div class='empty-inspector'>Los segmentos aparecerán aquí y en la pista de subtítulos.</div>";
+    $("transcriptList").querySelectorAll("[data-seg-prop]").forEach(input => input.onchange = () => {
+      const row = input.closest("[data-segment]"), sg = segments.find(x => x.id === row.dataset.segment); if (!sg) return; snapshot(); const prop = input.dataset.segProp; sg[prop] = prop === "text" ? input.value : Number(input.value); if (sg.end <= sg.start) sg.end = sg.start + .1; syncTranscriptToSubtitles(); renderAll();
+    });
+    $("transcriptList").querySelectorAll("[data-jump]").forEach(b => b.onclick = () => { const sg = segments.find(x => x.id === b.dataset.jump); if (sg) setPlayhead(sg.start); });
+    $("transcriptList").querySelectorAll("[data-seg-remove]").forEach(b => b.onclick = () => { snapshot(); transcript().segments = segments.filter(x => x.id !== b.dataset.segRemove); syncTranscriptToSubtitles(); renderAll(); });
+  }
+  function syncTranscriptToSubtitles() {
+    const t = track("subtitles"); const manual = t.items.filter(i => !i.metadata?.transcript_segment_id);
+    const generated = transcript().segments.map(s => ({id: `item_${s.id}`, track: "subtitles", start: Number(s.start), duration: Math.max(.05, Number(s.end) - Number(s.start)), asset_id: null, source_in: 0, label: "Subtítulo", enabled: true, volume: 1, opacity: 1, z_index: 30, text: s.text, metadata: {transcript_segment_id: s.id}, transform: baseTransform(), transitions: baseTransitions(), keyframes: [], color: baseColor(), text_style: baseTextStyle("subtitles")})).filter(i => i.start < seq().duration).map(i => ({...i, duration: Math.min(i.duration, seq().duration - i.start)}));
+    t.items = [...manual, ...generated]; t.enabled = true;
+  }
+  async function importSubtitleFile(file) {
+    const ext = file.name.toLowerCase().endsWith(".vtt") ? "vtt" : "srt"; const text = await file.text();
+    try { const r = await apiJson("/api/transcript/import", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({format: ext, text})}); snapshot(); transcript().segments = r.segments; transcript().source = `import:${file.name}`; syncTranscriptToSubtitles(); renderAll(); toast(`${r.segments.length} segmentos importados`); } catch (e) { toast(`No pude importar subtítulos: ${e.message}`, true); }
+  }
+  function primaryVideoAsset() { const item = track("video")?.items[0]; return item && state.assets.find(a => a.id === item.asset_id); }
+  async function transcribePrimaryVideo() {
+    const asset = primaryVideoAsset(), st = await ensureProjectStorage(); if (!asset) return toast("Agrega un video principal primero", true);
+    try { toast("Transcribiendo con el motor configurado…"); const r = await apiJson("/api/transcript/transcribe", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({project_id: st.project_id, filename: asset.name})}); snapshot(); transcript().segments = r.segments; transcript().source = `transcribe:${asset.name}`; syncTranscriptToSubtitles(); renderAll(); toast(`${r.segments.length} segmentos transcritos`); } catch (e) { toast(`Transcripción no disponible: ${e.message}`, true); }
+  }
+
+  async function generateClipCandidates() {
+    const segments = transcript().segments || []; if (!segments.length) return toast("Primero transcribe o importa SRT/VTT", true);
+    try {
+      const r = await apiJson("/api/social-clips/candidates", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({segments, target_seconds: Number($("clipTarget").value), min_seconds: Number($("clipMin").value), max_seconds: Number($("clipMax").value), limit: 10})});
+      social().candidates = r.candidates; dirty(); renderClipCandidates(); toast(`${r.candidates.length} candidatos listos`);
+    } catch (e) { toast(`No pude generar candidatos: ${e.message}`, true); }
+  }
+  function renderClipCandidates() {
+    const rows = social().candidates || [];
+    $("clipCandidates").innerHTML = rows.length ? rows.map(c => `<div class="clip-candidate"><div class="clip-candidate-head"><b>${escapeHtml(c.title)}</b><span class="clip-score">${Number(c.score).toFixed(2)}</span></div><p>${escapeHtml(c.hook)}</p><div class="mini-meta">${fmt(c.start)} → ${fmt(c.end)} · ${Number(c.duration).toFixed(1)} s · ${escapeHtml((c.reason || []).join(" · "))}</div><div class="clip-candidate-actions"><button class="btn small ghost" data-preview-candidate="${c.id}">Ver</button><button class="btn small" data-create-candidate="${c.id}">Crear clip</button></div></div>`).join("") : "<div class='empty-inspector'>Usa la transcripción para proponer clips editables.</div>";
+    $("clipCandidates").querySelectorAll("[data-preview-candidate]").forEach(b => b.onclick = () => { const c = rows.find(x => x.id === b.dataset.previewCandidate); if (c) setPlayhead(c.start); });
+    $("clipCandidates").querySelectorAll("[data-create-candidate]").forEach(b => b.onclick = () => { const c = rows.find(x => x.id === b.dataset.createCandidate); if (c) createClipFromRange(c.start, c.end, c.title); });
+  }
+  function createClipFromRange(start, end, name = "Clip") {
+    const src = state.sequences.find(s => s.kind === "long") || seq(); const c = clone(src); c.id = uid("seq"); c.kind = "clip"; c.name = name || `Clip ${state.sequences.filter(s => s.kind === "clip").length + 1}`; c.duration = Math.max(.2, end - start); c.playhead = 0;
+    c.tracks.forEach(t => { t.id = uid("track"); t.items = t.items.flatMap(item => { const itemEnd = item.start + item.duration, ovStart = Math.max(start, item.start), ovEnd = Math.min(end, itemEnd); if (ovEnd <= ovStart) return []; const out = clone(item); out.id = uid("item"); out.source_in = Number(item.source_in || 0) + (ovStart - item.start); out.start = ovStart - start; out.duration = ovEnd - ovStart; out.keyframes = (out.keyframes || []).filter(k => k.time >= ovStart - item.start && k.time <= ovEnd - item.start).map(k => ({...k, time: k.time - (ovStart - item.start)})); return [out]; }); });
+    snapshot(); state.sequences.push(c); state.active_sequence_id = c.id; selected = null; renderAll(); toast("Clip creado y listo para editar");
+  }
+
+  function addKeyframe() {
+    if (!selected) return toast("Selecciona un elemento visual", true); const [, item] = findItem(selected); if (!item || !VISUAL_TRACKS.has(item.track)) return toast("Los keyframes visuales aplican a video, B-roll e imágenes", true);
+    const local = clamp(seq().playhead - item.start, 0, item.duration); snapshot(); const idx = item.keyframes.findIndex(k => Math.abs(Number(k.time)-local) < .02); const frame = idx >= 0 ? item.keyframes[idx] : {id:uid("kf"), time:Number(local.toFixed(3))}; frame.transform=clone(item.transform); frame.opacity=item.opacity; if (idx < 0) item.keyframes.push(frame); item.keyframes.sort((a,b)=>a.time-b.time); renderAll(); toast(`Keyframe visual en ${fmt(local)}`);
+  }
+  function addAudioKeyframe() {
+    if (!selected) return toast("Selecciona un elemento con audio", true); const [, item]=findItem(selected); if (!item || !AUDIO_CAPABLE_TRACKS.has(item.track)) return toast("Selecciona video, B-roll, música o voz", true);
+    const local=clamp(seq().playhead-item.start,0,item.duration); snapshot(); const idx=item.keyframes.findIndex(k=>Math.abs(Number(k.time)-local)<.02); const frame=idx>=0?item.keyframes[idx]:{id:uid("kf"),time:Number(local.toFixed(3))}; frame.volume=Number(item.volume ?? 1); if(idx<0)item.keyframes.push(frame); item.keyframes.sort((a,b)=>a.time-b.time); renderAll(); toast(`Punto de volumen en ${fmt(local)}`);
+  }
+  function removeSelected() { if (!selected) return; snapshot(); for (const t of seq().tracks) t.items = t.items.filter(i => i.id !== selected); selected = null; renderAll(); }
+  function duplicateSelected() { if (!selected) return; const [t, i] = findItem(selected); if (!i || t.locked) return; snapshot(); const c = clone(i); c.id = uid("item"); c.start = clamp(i.start + i.duration + .1, 0, seq().duration - i.duration); t.items.push(c); selected = c.id; renderAll(); }
+  function splitSelected() {
+    if (!selected) return; const [t, i] = findItem(selected); if (!i || t.locked) return; const at = seq().playhead; if (at <= i.start + .05 || at >= i.start + i.duration - .05) return toast("Pon el cursor dentro del elemento", true);
+    snapshot(); const originalEnd = i.start + i.duration, splitLocal = at - i.start, right = clone(i); right.id = uid("item"); right.source_in = Number(i.source_in || 0) + splitLocal; right.start = at; right.duration = originalEnd - at; i.duration = splitLocal;
+    i.keyframes = (i.keyframes || []).filter(k => k.time <= splitLocal); right.keyframes = (right.keyframes || []).filter(k => k.time >= splitLocal).map(k => ({...k, time: k.time - splitLocal})); t.items.push(right); selected = right.id; renderAll();
+  }
+  function undo() { if (!history.length) return; future.push(JSON.stringify(state)); state = JSON.parse(history.pop()); selected = null; ensureShape(); save(); renderAll(); }
+  function redo() { if (!future.length) return; history.push(JSON.stringify(state)); state = JSON.parse(future.pop()); selected = null; ensureShape(); save(); renderAll(); }
+  function togglePlay() {
+    playing = !playing; $("playBtn").textContent = playing ? "❚❚" : "▶"; if (playTimer) clearInterval(playTimer);
+    if (playing) { let last = performance.now(); playTimer = setInterval(() => { const now = performance.now(); setPlayhead(seq().playhead + (now - last) / 1000); last = now; if (seq().playhead >= seq().duration) { playing = false; clearInterval(playTimer); $("playBtn").textContent = "▶"; } }, 80); }
+  }
+  function newClip() { const at = seq().playhead, end = Math.min(seq().duration, at + 30); createClipFromRange(at, end, `Clip ${String(state.sequences.filter(s => s.kind === "clip").length + 1).padStart(2, "0")}`); }
+  function addKeyIdea() { const t = track("key_ideas"); if (!t.enabled) { t.enabled = true; state.settings.key_ideas_default = true; } snapshot(); const i = {id: uid("item"), track: "key_ideas", start: seq().playhead, duration: 3, asset_id: null, source_in: 0, label: "Idea clave", enabled: true, volume: 1, opacity: 1, z_index: 20, text: "Idea clave editable", metadata: {manual: true}, transform: baseTransform(), transitions: baseTransitions(), keyframes: [], color: baseColor(), text_style: baseTextStyle("key_ideas")}; t.items.push(i); selected = i.id; renderAll(); }
+  function addSubtitleSample() { const t = track("subtitles"); snapshot(); const i = {id: uid("item"), track: "subtitles", start: seq().playhead, duration: 3, asset_id: null, source_in: 0, label: "Subtítulo", enabled: true, volume: 1, opacity: 1, z_index: 30, text: "Edita este subtítulo", metadata: {manual: true}, transform: baseTransform(), transitions: baseTransitions(), keyframes: [], color: baseColor(), text_style: baseTextStyle("subtitles")}; t.items.push(i); selected = i.id; renderAll(); }
+
+  async function renderProject() {
+    const st = await ensureProjectStorage(); if (!st?.project_id) return toast("No hay proyecto físico", true);
+    await savePhysical();
+    try {
+      $("renderQueue").textContent = "Preparando render…"; $("renderProgressBar").style.width = "2%";
+      const outputName = `${state.name.replace(/[^\w-]+/g,"_") || "video"}_${seq().name.replace(/[^\w-]+/g,"_") || "sequence"}_R26.mp4`;
+      const r = await apiJson("/api/render/start", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({project_id:st.project_id, project:state, sequence_id:seq().id, output_name:outputName})});
+      const id = r.job.id; $("renderQueue").textContent = `Render en cola · ${id}`;
+      const poll = async () => {
+        try { const j = await apiJson(`/api/render/status?${new URLSearchParams({job_id:id})}`); const pct = Math.round((j.progress || 0)*100); $("renderProgressBar").style.width = `${pct}%`; $("renderQueue").textContent = `${j.status} · ${pct}% · ${j.label}`;
+          if (j.status === "completed") { $("renderQueue").textContent = `Listo · ${j.result?.engine || "render"} · ${j.result?.path || "exports/"}`; toast("MP4 renderizado en Salidas"); return; }
+          if (j.status === "failed") { $("renderQueue").textContent = `Falló · ${j.error}`; toast(`Render falló: ${j.error}`, true); return; }

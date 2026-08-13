@@ -1,0 +1,34 @@
+  async function detectSilencesPrimary(showToast=true) { const asset=primaryVideoAsset(), st=await ensureProjectStorage(); if(!asset||!st?.project_id)return toast("Agrega un video principal primero",true); $("silenceState").textContent="analizando…"; try { const r=await apiJson("/api/media/silences",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({project_id:st.project_id,filename:asset.name,noise_db:Number($("silenceNoise").value),min_duration:Number($("silenceMin").value),padding:Number($("silencePadding").value)})}); const primary=track("video").items[0]; let rows=(r.ranges||[]); if(primary){ const src0=Number(primary.source_in||0),src1=src0+primary.duration; rows=rows.filter(x=>x.end>src0&&x.start<src1).map(x=>({start:primary.start+Math.max(0,x.start-src0),end:primary.start+Math.min(primary.duration,x.end-src0)})); } rows=normalizeCutRanges(rows,seq().duration); const store=silenceStore(); store.asset_id=asset.id; store.ranges=rows; store.total_silence=rows.reduce((a,x)=>a+x.end-x.start,0); store.analyzed=true; store.parameters={noise_db:r.noise_db,min_duration:r.min_duration,padding:r.padding}; renderSilenceState(); if(showToast)toast(`${rows.length} silencios · ${store.total_silence.toFixed(1)} s candidatos`); return store; } catch(e){ $("silenceState").textContent="error"; toast(`No pude detectar silencios: ${e.message}`,true); return null; } }
+  function renderSilenceState(){ const st=silenceStore(), btn=$("applySilenceBtn"); if(!st.analyzed){$("silenceState").textContent="sin analizar";$("silenceSummary").textContent="No se modifica nada hasta que confirmes Aplicar ripple.";btn.disabled=true;return;} const n=(st.ranges||[]).length,total=Number(st.total_silence||0);$("silenceState").textContent=`${n} pausas`;$("silenceSummary").textContent=n?`Se pueden retirar ${total.toFixed(1)} s. Duración estimada: ${fmt(Math.max(.1,seq().duration-total))}. Revisa y pulsa Aplicar ripple.`:"No encontré silencios que cumplan estos parámetros.";btn.disabled=!n; }
+  async function applyDetectedSilences(){ const st=silenceStore(); if(!st.analyzed||!(st.ranges||[]).length)return toast("Primero detecta silencios",true); const ok=await modal("Aplicar limpieza ripple",`Se retirarán ${st.ranges.length} pausas (${Number(st.total_silence||0).toFixed(1)} s) de esta secuencia. El original no se modifica y puedes deshacer con ⌘Z.`,"Aplicar ripple"); if(!ok)return; snapshot(); try { const r=await apiJson("/api/timeline/ripple",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({project:state,sequence_id:seq().id,ranges:st.ranges})}); state=r.project; ensureShape(); selected=null; renderAll(); dirty(); toast(`${Number(r.removed_seconds||0).toFixed(1)} s retirados · puedes deshacer con ⌘Z`); } catch(e){ history.pop(); toast(`No pude aplicar ripple: ${e.message}`,true); } }
+  function fitTimeline(){ const sc=$("timelineScroll"); if(!sc)return; const available=Math.max(220,sc.clientWidth-150); pxSec=clamp(available/Math.max(1,seq().duration),4,24); $("zoomRange").value=String(Math.round(pxSec)); renderTimeline(); }
+
+  function smart(action) { if (action === "clips") return generateClipCandidates(); if (action === "captions") return transcript().segments.length ? toast("Edita la transcripción directamente aquí") : addSubtitleSample(); if (action === "broll") return toast("Selecciona recursos y agrégalos a B-roll; el motor R25 podrá sugerir ubicaciones"); if (action === "silence") return detectSilencesPrimary(true); }
+
+  function syncControls() {
+    $("projectName").value = state.name; const k = track("key_ideas"), sub = track("subtitles"); $("keyIdeasToggle").checked = !!k?.enabled; $("subtitlesToggle").checked = !!sub?.enabled; $("normalizeToggle").checked = state.settings.audio.auto_normalize !== false; $("duckToggle").checked = state.settings.audio.duck_music_under_voice !== false; $("snapToggle").checked = seq().settings?.snap !== false; $("safeZonesToggle").checked = seq().settings?.safe_zones !== false; $("safeZones").classList.toggle("hidden", !$("safeZonesToggle").checked);
+    document.querySelectorAll("[data-ratio]").forEach(b => b.classList.toggle("active", b.dataset.ratio === seq().aspect_ratio)); const vc = $("videoCanvas"); vc.className = `video-canvas ratio-${seq().aspect_ratio.replace(":", "-")}`; $("simpleModeBtn").textContent = state.settings.editing_mode === "simple" ? "Modo simple" : "Modo pro"; document.body.classList.toggle("simple-mode", state.settings.editing_mode === "simple");
+    $("qualitySelect").value = state.settings.export.quality_label || "Alta · H.264"; $("fpsSelect").value = String(state.settings.export.fps || 30); $("hardwareAccelerationSelect").value = state.settings.export.hardware_acceleration || "auto";
+    if ($("timelineEditMode")) $("timelineEditMode").value = timelineMode();
+    if ($("publishPresetSelect")) $("publishPresetSelect").value = state.settings.export.publish_preset || "";
+    if ($("publishPresetState")) $("publishPresetState").textContent = state.settings.export.publish_preset ? `Preset · ${state.settings.export.publish_preset}` : "Manual";
+    $("denoiseToggle").checked = state.settings.audio.voice_denoise !== false; $("compressToggle").checked = state.settings.audio.voice_compression !== false; $("limiterToggle").checked = state.settings.audio.limiter !== false; $("targetLufs").value = state.settings.audio.target_lufs ?? -14; $("truePeak").value = state.settings.audio.true_peak_db ?? -1; $("musicGain").value = state.settings.audio.music_gain ?? .30; document.body.classList.toggle("focus-mode",!!state.settings.focus_mode); renderSilenceState();
+  }
+
+  function wireTransformBox() {
+    const box = $("transformBox");
+    box.onpointerdown = e => {
+      if (!selected) return; const [, item] = findItem(selected); if (!item || !VISUAL_TRACKS.has(item.track)) return;
+      const rect = $("videoCanvas").getBoundingClientRect(), base = clone(item.transform), startX = e.clientX, startY = e.clientY, scaling = e.target.classList.contains("transform-handle");
+      snapshot(); box.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation();
+      const move = ev => {
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
+        if (scaling) item.transform.scale = clamp(Number(base.scale || 1) + (dx / Math.max(1, rect.width) + dy / Math.max(1, rect.height)), .05, 20);
+        else { item.transform.x = clamp(Number(base.x ?? .5) + dx / Math.max(1, rect.width), -2, 3); item.transform.y = clamp(Number(base.y ?? .5) + dy / Math.max(1, rect.height), -2, 3); }
+        renderPreview(); renderInspector();
+      };
+      const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); dirty(); };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+    };
+  }
+

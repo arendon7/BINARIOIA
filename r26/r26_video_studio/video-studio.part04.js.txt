@@ -1,0 +1,100 @@
+    const compatible = (trackKind === "video" || trackKind === "broll") ? asset.kind === "video" : trackKind === "images" ? asset.kind === "image" : (trackKind === "music" || trackKind === "voiceover") ? asset.kind === "audio" : false;
+    if (!compatible) return toast(`Ese recurso no es compatible con ${track(trackKind)?.label || trackKind}`, true);
+    const t = track(trackKind); if (!t || t.locked) return toast("Pista bloqueada", true); snapshot();
+    if (trackKind === "video" && !t.items.length && asset.duration && at < .05 && asset.duration > seq().duration) seq().duration = asset.duration;
+    const duration = Math.min(asset.duration || (trackKind === "images" ? 4 : 10), Math.max(.2, seq().duration - at));
+    const item = {id: uid("item"), track: trackKind, start: at, duration, asset_id: asset.id, source_in: 0, label: asset.name, enabled: true, volume: 1, opacity: 1, z_index: 0, text: null, metadata: {}, transform: baseTransform(), transitions: baseTransitions(), keyframes: []};
+    t.items.push(item); selected = item.id; renderAll(); toast(`Agregado a ${t.label}`); if (trackKind === "video" && t.items.length === 1) setTimeout(() => detectScenesPrimary(false), 150);
+  }
+
+  function waveformHtml(item) {
+    if (!AUDIO_TRACKS.has(item.track) && !["video", "broll"].includes(item.track)) return "";
+    const asset = state.assets.find(a => a.id === item.asset_id), peaks = asset?.metadata?.waveform;
+    if (!Array.isArray(peaks) || !peaks.length) return "";
+    const count = Math.max(12, Math.min(80, Math.floor(item.duration * pxSec / 4)));
+    const stride = Math.max(1, Math.floor(peaks.length / count));
+    const sampled = []; for (let i = 0; i < peaks.length && sampled.length < count; i += stride) sampled.push(peaks[i]);
+    return `<div class="waveform">${sampled.map(v => `<i style="height:${Math.max(3, Math.round(v * 32))}px"></i>`).join("")}</div>`;
+  }
+  function audioEnvelopeHtml(item) {
+    if (!AUDIO_CAPABLE_TRACKS.has(item.track)) return "";
+    const points = [{time:0, volume:Number(item.volume ?? 1)}, ...(item.keyframes || []).filter(k => k.volume != null).map(k => ({time:Number(k.time||0), volume:Number(k.volume)}))].sort((a,b)=>a.time-b.time);
+    if (points.length < 2) return "";
+    const coords = points.map(p => `${clamp(p.time / Math.max(.001,item.duration),0,1)*100},${100-clamp(p.volume/4,0,1)*100}`).join(" ");
+    return `<svg class="audio-envelope" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${coords}"></polyline></svg>`;
+  }
+  function itemHtml(i) {
+    ensureItemShape(i); const left = i.start * pxSec, width = Math.max(18, i.duration * pxSec), a = state.assets.find(a => a.id === i.asset_id), label = i.text || i.label || a?.name || i.track;
+    const kin = i.keyframes.map(k => `<i class="keyframe-mark" style="left:${clamp(Number(k.time) / i.duration, 0, 1) * 100}%"></i>`).join("");
+    const tin = i.transitions.in?.type !== "none" ? '<i class="transition-mark in"></i>' : "", tout = i.transitions.out?.type !== "none" ? '<i class="transition-mark out"></i>' : "";
+    return `<div class="timeline-item ${i.track} ${i.enabled ? "" : "disabled"} ${i.id === selected ? "selected" : ""}" data-item="${i.id}" style="left:${left}px;width:${width}px"><i class="resize-handle left"></i>${waveformHtml(i)}${audioEnvelopeHtml(i)}${tin}${tout}${kin}<div class="item-text">${escapeHtml(label)}</div><i class="resize-handle right"></i></div>`;
+  }
+  function renderTimeline() {
+    const s = seq(), width = Math.max(900, s.duration * pxSec); document.documentElement.style.setProperty("--pxsec", `${pxSec}px`);
+    const ruler = $("ruler"); ruler.style.width = `${width}px`; ruler.innerHTML = ""; const step = pxSec >= 15 ? 5 : pxSec >= 8 ? 10 : 15;
+    for (let x = 0; x <= s.duration; x += step) { const d = document.createElement("div"); d.className = "tick"; d.style.left = `${x * pxSec}px`; d.textContent = fmt(x).slice(0, 5); ruler.appendChild(d); }
+    $("tracks").innerHTML = s.tracks.map(t => `<div class="track-row"><div class="track-label"><button data-track-enable="${t.kind}" class="${t.enabled ? "" : "off"}" title="Mostrar/ocultar">◉</button><button data-track-lock="${t.kind}" class="${t.locked ? "" : "off"}" title="Bloquear">▣</button><button data-track-mute="${t.kind}" class="${t.muted ? "off" : ""}" title="Silenciar pista">M</button><strong>${t.label}</strong></div><div class="track-lane" data-track="${t.kind}" style="width:${width}px">${t.items.map(itemHtml).join("")}</div></div>`).join("");
+    document.querySelectorAll("[data-track-enable]").forEach(b => b.onclick = () => { snapshot(); const t = track(b.dataset.trackEnable); t.enabled = !t.enabled; if (t.kind === "key_ideas") state.settings.key_ideas_default = t.enabled; renderAll(); });
+    document.querySelectorAll("[data-track-lock]").forEach(b => b.onclick = () => { snapshot(); const t = track(b.dataset.trackLock); t.locked = !t.locked; renderTimeline(); });
+    document.querySelectorAll("[data-track-mute]").forEach(b => b.onclick = () => { snapshot(); const t = track(b.dataset.trackMute); t.muted = !t.muted; renderTimeline(); });
+    document.querySelectorAll(".timeline-item").forEach(wireItem);
+    document.querySelectorAll(".track-lane").forEach(l => {
+      l.addEventListener("pointerdown", e => { if (e.target !== l) return; const r = l.getBoundingClientRect(); setPlayhead((e.clientX - r.left) / pxSec); });
+      l.addEventListener("dragover", e => { if (e.dataTransfer.types.includes("application/x-binario-asset")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+      l.addEventListener("drop", e => { e.preventDefault(); const assetId = e.dataTransfer.getData("application/x-binario-asset"); if (!assetId) return; const target = track(l.dataset.track); if (!target || target.locked) return toast("Pista bloqueada", true); const asset = state.assets.find(a => a.id === assetId); if (!asset) return; const r = l.getBoundingClientRect(); const at = clamp((e.clientX - r.left) / pxSec, 0, seq().duration); addAssetToSpecificTrack(asset, target.kind, at); });
+    });
+    updatePlayhead();
+  }
+  function findItem(id) { for (const t of seq().tracks) { const i = t.items.find(x => x.id === id); if (i) return [t, i]; } return [null, null]; }
+  function timelineMode() { return state.settings.timeline_edit_mode || "magnetic"; }
+  function localMagnetStart(item, desired, threshold = .18) {
+    if (timelineMode() === "free" || !$("snapToggle")?.checked) return Math.max(0, desired);
+    const points = [0, seq().duration];
+    for (const t of seq().tracks) for (const other of t.items) if (other.id !== item.id) { points.push(Number(other.start||0), Number(other.start||0)+Number(other.duration||0)); }
+    if (seq().kind === "long") for (const scene of (sceneStore().scenes || [])) points.push(Number(scene.time||0));
+    let best = desired, dist = threshold + 1;
+    for (const p of points) {
+      const d1 = Math.abs(desired - p); if (d1 < dist && d1 <= threshold) { best = p; dist = d1; }
+      const endStart = p - Number(item.duration||0), d2 = Math.abs(desired - endStart); if (d2 < dist && d2 <= threshold) { best = endStart; dist = d2; }
+    }
+    return Math.max(0, best);
+  }
+  async function commitTimelineMove(baseProject, itemId, requestedStart) {
+    try {
+      const r = await apiJson("/api/timeline/move", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({project:baseProject, sequence_id:baseProject.active_sequence_id, item_id:itemId, new_start:requestedStart, mode:timelineMode(), threshold:.18, ripple_scope:"all"})});
+      state = r.project; ensureShape(); selected = itemId; renderAll(); dirty();
+      if (r.snapped_to != null) toast("Ajuste magnético aplicado");
+      if (r.mode === "ripple" && r.shifted_items) toast(`Ripple: ${r.shifted_items} elementos desplazados`);
+    } catch (e) { state = baseProject; ensureShape(); renderAll(); toast(`No pude mover el elemento: ${e.message}`, true); }
+  }
+  function wireItem(el) {
+    el.onclick = e => { e.stopPropagation(); selected = el.dataset.item; renderAll(); };
+    el.onpointerdown = e => {
+      if (e.button !== 0) return; const [t, i] = findItem(el.dataset.item); if (!i || t.locked) return; selected = i.id;
+      const handle = e.target.classList.contains("resize-handle") ? (e.target.classList.contains("left") ? "left" : "right") : "move";
+      const startX = e.clientX, baseStart = i.start, baseDur = i.duration, baseSource = i.source_in || 0, dragBase = clone(state); snapshot(); el.setPointerCapture(e.pointerId);
+      const move = ev => {
+        const dx = (ev.clientX - startX) / pxSec; let ns = baseStart, nd = baseDur, source = baseSource;
+        if (handle === "move") ns = localMagnetStart(i, baseStart + dx);
+        if (handle === "left") { ns = baseStart + dx; nd = baseDur - dx; source = Math.max(0, baseSource + dx); }
+        if (handle === "right") nd = baseDur + dx;
+        if ($("snapToggle").checked && handle !== "move") { const snap = .25; ns = Math.round(ns / snap) * snap; nd = Math.round(nd / snap) * snap; }
+        ns = clamp(ns, 0, Math.max(.05, seq().duration - .05)); nd = clamp(nd, .05, Math.max(.05, seq().duration - ns)); i.start = ns; i.duration = nd; i.source_in = source;
+        el.classList.toggle("magnetic-snap", handle === "move" && timelineMode() === "magnetic" && Math.abs(ns-(baseStart+dx))>.001);
+        el.classList.toggle("ripple-edit", handle === "move" && timelineMode() === "ripple");
+        renderTimeline(); renderInspector(); renderPreview();
+      };
+      const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); const finalStart = i.start; if (handle === "move") commitTimelineMove(dragBase, i.id, finalStart); else dirty(); };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", up);
+    };
+  }
+  function updatePlayhead() { $("playhead").style.left = `calc(var(--label-w) + ${seq().playhead * pxSec}px)`; $("timecode").textContent = `${fmt(seq().playhead)} / ${fmt(seq().duration)}`; }
+  function setPlayhead(v) { seq().playhead = clamp(Number(v) || 0, 0, seq().duration); updatePlayhead(); renderPreview(); updateSceneActive(); }
+
+  function transitionOptions(current) {
+    return ["none", "fade", "dissolve", "slide_left", "slide_right", "zoom"].map(v => `<option value="${v}" ${v === current ? "selected" : ""}>${v}</option>`).join("");
+  }
+  function colorPresetOptions(current) { return Object.keys(COLOR_PRESETS).map(v => `<option value="${v}" ${v===current?"selected":""}>${v}</option>`).join(""); }
+  function textPresetOptions(current) { return [["clean_white","Blanco limpio"],["bold_social","Social bold"],["minimal","Minimal"],["boxed","Caja"],["brand_gold","Dorado"]].map(([v,l]) => `<option value="${v}" ${v===current?"selected":""}>${l}</option>`).join(""); }
+  function applyColorPreset(item, preset) { const values=COLOR_PRESETS[preset] || COLOR_PRESETS.natural; item.color={...baseColor(),...values,preset}; }
+

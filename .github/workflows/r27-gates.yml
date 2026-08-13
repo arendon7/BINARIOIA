@@ -38,6 +38,7 @@ jobs:
           data = json.loads(Path('config/development.json').read_text())
           assert data.get('canonical_repository') == 'arendon7/BINARIOIA'
           assert data.get('development_branch') == 'develop'
+          assert data.get('stable_branch') == 'main'
           print('Governance PASS')
           PY
       - name: Compile repository gate scripts
@@ -50,20 +51,33 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Detect whether full source is present
+      - name: Detect source hydration state
         id: source
         shell: bash
         run: |
-          if [[ -d apps && -d common && -d hub && -d runtime && -d r26 && -d tests ]]; then
+          required=(
+            apps common hub runtime r26 tests
+            hub/server.py hub/ui/projects.html
+            r26/r26_core/project_center.py r26/r26_core/preferences.py
+            r26/r26_video_studio/server.py
+            r26/r26_video_studio/video-studio.js
+            r26/r26_video_studio/video-studio.css
+          )
+          missing=()
+          for p in "${required[@]}"; do
+            [[ -e "$p" ]] || missing+=("$p")
+          done
+          if (( ${#missing[@]} == 0 )); then
             echo 'present=true' >> "$GITHUB_OUTPUT"
+            echo 'R27 executable source hydration complete enough for core regression.'
           else
             echo 'present=false' >> "$GITHUB_OUTPUT"
-            echo 'R26 source tree not imported yet; release remains blocked by issue #4.'
+            printf 'Partial source hydration; deferring full R27 regression until these dependencies exist:\n - %s\n' "${missing[*]}"
           fi
       - name: Install pytest
         if: steps.source.outputs.present == 'true'
         run: python -m pip install --disable-pip-version-check -q pytest
-      - name: Run core/R27 tests when source exists
+      - name: Run core/R27 tests when executable source is hydrated
         if: steps.source.outputs.present == 'true'
         run: python -m pytest tests -q
       - name: Verify twelve application source directories

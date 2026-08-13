@@ -1,0 +1,140 @@
+
+from __future__ import annotations
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
+from pathlib import Path
+from urllib.parse import urlparse, unquote, parse_qs, quote
+from urllib.request import urlopen, Request
+import importlib.util, json, mimetypes, os, shutil, socket, subprocess, sys, threading, time, webbrowser
+from common.ports import choose_port, record, service_matches, services_state, stop_app_services
+
+ROOT=Path(__file__).resolve().parents[1]
+UI=ROOT/"hub/ui"
+APPS=ROOT/"apps"
+SERVICES={}
+LOCK=threading.RLock()
+RUNTIME_JOB={"running":False,"progress":0.0,"message":"Sin tareas pendientes","result":None,"error":None}
+RUNTIME_JOB_LOCK=threading.RLock()
+R27_VIDEO_CONTRACT="app[\"id\"]==\"05-editor-video-ia\" r26.r26_video_studio.server project={quote BINARIO_HUB_URL"
+
+def json_load(p, default=None):
+    try: return json.loads(Path(p).read_text(encoding="utf-8"))
+    except Exception: return default
+
+def manifests():
+    from common.app_discovery import manifests as discover_manifests
+    return discover_manifests(APPS)
+
+def app_by_id(app_id):
+    return next((x for x in manifests() if x.get("id")==app_id),None)
+
+def port_open(port):
+    s=socket.socket(); s.settimeout(.15)
+    try: return s.connect_ex(("127.0.0.1",port))==0
+    finally: s.close()
+
+def process_env(app_dir=None):
+    env=os.environ.copy()
+    try:
+        runtime_venv=(ROOT/".venv").resolve(strict=True)
+        runtime_root=runtime_venv.parent
+    except Exception:
+        runtime_venv=ROOT/".venv"
+        runtime_root=runtime_venv.parent
+    runtime_bin=str(runtime_root/"bin")
+    paths=[runtime_bin,str(runtime_venv/"bin"),str(ROOT),"/opt/homebrew/bin","/usr/local/bin",env.get("PATH","")]
+    if app_dir: paths.insert(0,str(app_dir))
+    env["PATH"]=":".join(x for x in paths if x)
+    env["PYTHONPATH"]=":".join([str(ROOT),str(app_dir) if app_dir else "",env.get("PYTHONPATH","")])
+    env["BINARIO_IA_ROOT"]=str(ROOT)
+    env["BINARIO_AI_CONFIG_ROOT"]=str(Path.home()/"Library"/"Application Support"/"Binario IA"/"ai")
+    env["BINARIO_WORKSPACES_HOME"]=os.environ.get("BINARIO_WORKSPACES_HOME",str(Path.home()/"Documents"/"Binario IA"/"Workspaces"))
+    try:
+        from runtime.runtime_manager import _known_path
+        f=_known_path("ffmpeg"); p=_known_path("ffprobe")
+        if f: env["BINARIO_FFMPEG"]=f
+        if p: env["BINARIO_FFPROBE"]=p
+    except Exception: pass
+    if os.environ.get("BINARIO_HUB_URL"): env["BINARIO_HUB_URL"]=os.environ["BINARIO_HUB_URL"]
+    return env
+
+def load_engine(app):
+    app_dir=Path(app["_dir"]); p=app_dir/"engine.py"
+    name="sbia_"+app["id"].replace("-","_")
+    spec=importlib.util.spec_from_file_location(name,p)
+    mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+    return mod
+
+def ensure_video_project():
+    d=Path.home()/"Documents"/"Binario IA"/"Video Projects"; d.mkdir(parents=True,exist_ok=True)
+    p=d/"nuevo-proyecto.json"
+    if not p.exists():
+        p.write_text(json.dumps({
+            "name":"Nuevo proyecto","sources":[],"audio_sources":[],"transcript":[],"assets":[],
+            "output":{"width":1080,"height":1920,"fps":30,"video_codec":"libx264","audio_codec":"aac","crf":18,"preset":"medium"},
+            "edit":{"mode":"natural","target_duration":None,"tolerance":2.0,"pace":"natural",
+                    "smart_broll":True,"subject_layers":False,"transcription_language":"es",
+                    "auto_reframe":True,"auto_lower_thirds":True,"brand_preset":"binario",
+                    "auto_enhance_audio":True,"audio_enhancement_preset":"auto",
+                    "audio_denoise_mode":"auto","voice_enhancement":True,"normalize_loudness":True,"target_lufs":-16.0},
+            "metadata":{"output_preset":"vertical","standalone":True}
+        },indent=2,ensure_ascii=False),encoding="utf-8")
+    return p
+
+def ensure_documents_project(app_dir, requested=None):
+    d=Path.home()/"Documents"/"Binario IA"/"Documentos"; d.mkdir(parents=True,exist_ok=True)
+    if requested:
+        rp=Path(str(requested)).expanduser().resolve()
+        if rp.is_file() and rp.suffix.lower()==".json": return rp
+    p=d/"nuevo-documento.json"
+    if not p.exists():
+        sample=app_dir/"examples/sample_project.json"
+        if sample.exists(): shutil.copy2(sample,p)
+        else:
+            p.write_text(json.dumps({"title":"Nuevo documento","objective":"Documento de trabajo","blocks":[],"sources":[]},indent=2,ensure_ascii=False),encoding="utf-8")
+    return p
+
+def service_id_for(app):
+    return f"binario-v0251a1-app-{app['id']}"
+
+def _service_root_ok(port:int, app:dict)->bool:
+    """Validate both service identity and the browser entrypoint before reuse/navigation."""
+    sid=service_id_for(app)
+    if not service_matches(port,sid):
+        return False
+    try:
+        req=Request(f"http://127.0.0.1:{int(port)}/",headers={"Cache-Control":"no-cache","Accept":"text/html"})
+        with urlopen(req,timeout=.8) as r:
+            if r.status!=200:
+                return False
+            text=r.read(12000).decode("utf-8","ignore")
+        if app["id"]=="05-editor-video-ia":
+            markers=["Editor Video IA", "Sistema Binario · Editor Video"]
+        elif app["id"]=="01-auditoria-negocio":
+            markers=["Audit Studio","Auditoría de Negocio"]
+        elif app["id"]=="02-cazador-webs":
+            markers=["Web Studio","Cazador de Webs"]
+        elif app["id"]=="03-agente-ia-whatsapp":
+            markers=["Agent Studio","WhatsApp"]
+        elif app["id"]=="04-auditoria-youtube":
+            markers=["YouTube Studio","Content Intelligence"]
+        elif app["id"]=="06-auditoria-marca-personal":
+            markers=["Brand Studio","Content Intelligence"]
+        elif app["id"]=="07-auditoria-ecommerce":
+            markers=["Commerce Studio","Auditoría E-commerce"]
+        elif app["id"]=="09-propuestas-ia":
+            markers=["Proposal Studio","Propuestas IA"]
+        elif app["id"]=="11-documentos-ia":
+            markers=["Documentos IA"]
+        elif app["id"]=="12-app-factory-ia":
+            markers=["Sistema Binario · App Factory","App Factory OS","Project Intelligence Hub"]
+        else:
+            markers=[app.get("name","")]
+        low=text.lower()
+        return any(m and m.lower() in low for m in markers)
+    except Exception:
+        return False
+
+def launch_service(app, payload=None):
+    payload=payload or {}
+    special=app.get("special_service") or {}
+    use_r26_video=app["id"]=="05-editor-video-ia"

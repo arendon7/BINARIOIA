@@ -1,0 +1,100 @@
+  function kindForFile(f) { if (f.type.startsWith("video/")) return "video"; if (f.type.startsWith("image/")) return "image"; if (f.type.startsWith("audio/")) return "audio"; return "other"; }
+  function cacheMediaUrl(filename) { const st = storage(); return st.project_id && filename ? `/api/project/cache?${new URLSearchParams({project_id: st.project_id, filename})}` : ""; }
+  function mediaUrl(asset) {
+    const st = storage(); if (!st.project_id || !asset) return "";
+    if ($("proxyToggle")?.checked && asset.metadata?.proxy_name) return cacheMediaUrl(asset.metadata.proxy_name);
+    return `/api/project/media?${new URLSearchParams({project_id: st.project_id, filename: asset.name})}`;
+  }
+  function renderAssets() {
+    const list = state.assets.filter(a => filter === "all" || a.kind === filter);
+    $("assetList").innerHTML = list.length ? list.map(a => {
+      const analyzed = a.metadata?.analysis_tool ? ` · ${a.metadata.analysis_tool}` : "";
+      const thumb = a.metadata?.thumbnail_name ? `<img src="${cacheMediaUrl(a.metadata.thumbnail_name)}" alt="">` : escapeHtml(a.kind);
+      const proxy = a.kind === "video" ? `<button data-proxy="${a.id}" title="Crear proxy">⚡</button>` : "";
+      return `<div class="asset" draggable="true" data-asset="${a.id}"><div class="asset-thumb">${thumb}</div><div class="asset-info"><b title="${escapeAttr(a.name)}">${escapeHtml(a.name)}</b><span>${a.duration ? fmt(a.duration) : "recurso"}${a.metadata?.proxy_name ? " · proxy" : ""}${analyzed}</span></div><div class="asset-actions"><button data-analyze="${a.id}" title="Analizar medio">⌁</button>${proxy}<button data-add="${a.id}" title="Agregar al cursor">＋</button><button class="remove" data-remove="${a.id}" title="Quitar recurso">×</button></div></div>`;
+    }).join("") : "<div class='empty-inspector'>Aún no hay recursos cargados.</div>";
+    document.querySelectorAll("[data-add]").forEach(b => b.onclick = e => { e.stopPropagation(); addAssetToTimeline(b.dataset.add); });
+    document.querySelectorAll("[data-remove]").forEach(b => b.onclick = e => { e.stopPropagation(); removeAsset(b.dataset.remove); });
+    document.querySelectorAll("[data-analyze]").forEach(b => b.onclick = e => { e.stopPropagation(); analyzeAssetById(b.dataset.analyze, true); });
+    document.querySelectorAll("[data-proxy]").forEach(b => b.onclick = e => { e.stopPropagation(); createProxyById(b.dataset.proxy); });
+    document.querySelectorAll(".asset[draggable=true]").forEach(el => el.ondragstart = e => { e.dataTransfer.setData("application/x-binario-asset", el.dataset.asset); e.dataTransfer.effectAllowed = "copy"; });
+  }
+  async function removeAsset(id) {
+    const asset = state.assets.find(x => x.id === id); if (!asset) return;
+    const refs = state.sequences.flatMap(s => s.tracks.flatMap(t => t.items.filter(i => i.asset_id === id))).length;
+    const ok = await modal("Quitar recurso", refs ? `“${escapeHtml(asset.name)}” se usa ${refs} vez/veces. También se retirará del timeline.` : `¿Quitar “${escapeHtml(asset.name)}” del proyecto?`, "Quitar");
+    if (!ok) return; snapshot(); state.assets = state.assets.filter(x => x.id !== id); state.sequences.forEach(s => s.tracks.forEach(t => t.items = t.items.filter(i => i.asset_id !== id))); selected = null; renderAll(); toast("Recurso eliminado");
+  }
+  async function addFiles(files) {
+    const st = await ensureProjectStorage(); if (!st?.project_id) return; let done = 0;
+    for (const f of [...files]) {
+      try {
+        toast(`Copiando ${f.name} a assets/…`);
+        const q = new URLSearchParams({project_id: st.project_id, filename: f.name});
+        const r = await apiJson(`/api/project/asset?${q}`, {method: "POST", headers: {"Content-Type": "application/octet-stream"}, body: f});
+        const asset = {id: uid("asset"), name: r.name || f.name, kind: kindForFile(f), source: r.path, duration: null, removable: true, metadata: {size: r.size, mime: f.type, project_asset: true}};
+        state.assets.push(asset); done++; renderAssets();
+        if (["video", "audio"].includes(asset.kind)) await analyzeAssetById(asset.id, false);
+      } catch (e) { toast(`No pude copiar ${f.name}: ${e.message}`, true); }
+    }
+    dirty(); renderAssets(); toast(`${done}/${files.length} recurso(s) copiados y registrados`);
+  }
+  async function analyzeAssetById(id, notify = true) {
+    const asset = state.assets.find(a => a.id === id); const st = await ensureProjectStorage(); if (!asset || !st?.project_id) return;
+    if (notify) toast(`Analizando ${asset.name}…`);
+    try {
+      const r = await apiJson("/api/media/analyze", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({project_id: st.project_id, filename: asset.name, waveform: ["video", "audio"].includes(asset.kind), points: 260})});
+      if (r.probe?.duration) asset.duration = r.probe.duration;
+      asset.metadata ||= {}; asset.metadata.probe = r.probe; asset.metadata.analysis_tool = r.probe?.tool || r.waveform?.tool || null;
+      if (r.waveform?.ok) asset.metadata.waveform = r.waveform.peaks;
+      if (asset.kind === "video" && !asset.metadata.thumbnail_name) { try { const th = await apiJson("/api/media/thumbnail", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({project_id:st.project_id, filename:asset.name})}); if (th.ok) asset.metadata.thumbnail_name = th.cache_name; } catch {} }
+      dirty(); renderAll(); if (notify) toast(r.waveform?.ok ? "Duración, waveform y miniatura listos" : "Medio analizado");
+    } catch (e) { asset.metadata ||= {}; asset.metadata.analysis_error = e.message; dirty(); if (notify) toast(`Análisis no disponible: ${e.message}`, true); }
+  }
+  async function createProxyById(id) {
+    const asset = state.assets.find(a => a.id === id), st = await ensureProjectStorage(); if (!asset || asset.kind !== "video" || !st?.project_id) return;
+    try { $("proxyStatus").textContent = "creando…"; toast(`Creando proxy de ${asset.name}…`); const r = await apiJson("/api/media/proxy", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({project_id:st.project_id, filename:asset.name, max_width:960})}); if (!r.ok) throw new Error(r.reason || "proxy no disponible"); snapshot(); asset.metadata ||= {}; asset.metadata.proxy_name = r.cache_name; asset.metadata.proxy_size = r.size || null; dirty(); renderAll(); $("proxyStatus").textContent = "proxy listo"; toast("Proxy listo; el render seguirá usando el original"); } catch(e) { $("proxyStatus").textContent = "original"; toast(`Proxy no disponible: ${e.message}`, true); }
+  }
+  async function analyzeLoudnessById(id) {
+    const asset = state.assets.find(a => a.id === id), st = await ensureProjectStorage(); if (!asset || !st?.project_id) return;
+    try { $("loudnessResult").textContent = "Midiendo…"; const r = await apiJson("/api/media/loudness", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({project_id:st.project_id, filename:asset.name})}); if (!r.ok) throw new Error(r.reason || "medición no disponible"); asset.metadata ||= {}; asset.metadata.loudness = r; $("loudnessResult").textContent = `${Number(r.integrated_lufs).toFixed(1)} LUFS · ${Number(r.true_peak_db).toFixed(1)} dBTP`; dirty(); } catch(e) { $("loudnessResult").textContent = "No disponible"; toast(e.message, true); }
+  }
+  async function detectScenesPrimary(notify = true) {
+    const asset = primaryVideoAsset(), st = await ensureProjectStorage();
+    if (!asset || !st?.project_id) return notify && toast("Agrega el video principal primero", true);
+    try {
+      if (notify) toast("Detectando cortes y creando miniaturas…");
+      const r = await apiJson("/api/media/scenes", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({project_id:st.project_id, filename:asset.name, threshold:.30, min_gap:.75, max_scenes:48})});
+      const store = sceneStore(); store.asset_id = asset.id; store.scenes = r.scenes || []; store.detected_with = r.tool || null;
+      dirty(); renderSceneStrip(); if (notify) toast(`${store.scenes.length} escenas listas`);
+    } catch(e) { if (notify) toast(`No pude detectar escenas: ${e.message}`, true); }
+  }
+  function updateSceneActive() {
+    const rows = sceneStore().scenes || [], at = seq().playhead;
+    document.querySelectorAll("[data-scene-time]").forEach((el, idx) => { const next = rows[idx+1]?.time ?? Infinity; el.classList.toggle("active", at >= Number(rows[idx]?.time || 0) && at < Number(next)); });
+  }
+  function renderSceneStrip() {
+    const store = sceneStore(), wrap = $("sceneStripWrap"), out = $("sceneStrip"); if (!wrap || !out) return;
+    wrap.classList.toggle("collapsed", !!store.collapsed); if ($("sceneCollapseBtn")) $("sceneCollapseBtn").textContent = store.collapsed ? "⌄" : "⌃";
+    const asset = primaryVideoAsset(), rows = asset && store.asset_id === asset.id ? (store.scenes || []) : [];
+    if (!rows.length) { out.innerHTML = `<div class="scene-empty">${asset ? "Pulsa Escenas para analizar cortes del video principal." : "Agrega un video principal para navegar por escenas."}</div>`; return; }
+    out.innerHTML = rows.map((row, idx) => { const t=Number(row.time||0), next=Number(rows[idx+1]?.time ?? asset.duration ?? seq().duration); const img=row.thumbnail ? `<img src="${cacheMediaUrl(row.thumbnail)}" alt="Escena ${idx+1}">` : `<span class="scene-no-thumb">${idx+1}</span>`; return `<button class="scene-card" data-scene-time="${t}" data-scene-end="${next}" title="${fmt(t)} · doble clic crea clip">${img}<span>${fmt(t).slice(0,5)}</span></button>`; }).join("");
+    out.querySelectorAll("[data-scene-time]").forEach(el => { el.onclick = () => setPlayhead(Number(el.dataset.sceneTime)); el.ondblclick = () => { const start=Number(el.dataset.sceneTime), end=Math.max(start+.2, Number(el.dataset.sceneEnd)); createClipFromRange(start, Math.min(end, seq().duration), `Escena ${fmt(start).slice(0,5)}`); }; });
+    updateSceneActive();
+  }
+
+  async function refreshEngineStatus(showToast=false) {
+    try { const r = await apiJson("/api/engine-status"); const render = r.render?.r25_render_command ? "R25" : (r.render?.native_ffmpeg ? "FFmpeg" : "sin render"); const tr = r.transcription?.mode || "sin Whisper"; const hw = r.acceleration?.recommended === "h264_videotoolbox" ? "VideoToolbox" : "software"; $("engineState").textContent = `Render: ${render} · Aceleración: ${hw} · Transcripción: ${tr}`; $("engineStatusBtn").textContent = hw === "VideoToolbox" ? "⚡ Motor" : render; if (showToast) toast($("engineState").textContent); return r; } catch(e) { $("engineState").textContent = `Motor no disponible: ${e.message}`; return null; }
+  }
+
+  function targetTrackForAsset(a) { if (a.kind === "video") return track("video").items.length ? "broll" : "video"; if (a.kind === "image") return "images"; if (a.kind === "audio") return "music"; return "images"; }
+  function addAssetToTimeline(id) {
+    const a = state.assets.find(x => x.id === id); if (!a) return; const kind = targetTrackForAsset(a), t = track(kind); if (t.locked) return toast("Esta pista está bloqueada", true);
+    snapshot(); const duration = Math.min(a.duration || (kind === "images" ? 4 : 10), Math.max(.2, seq().duration - seq().playhead));
+    if (kind === "video" && !t.items.length && a.duration && seq().playhead === 0 && a.duration > seq().duration) seq().duration = a.duration;
+    const itemDuration = Math.min(a.duration || duration, Math.max(.2, seq().duration - seq().playhead));
+    const item = {id: uid("item"), track: kind, start: seq().playhead, duration: itemDuration, asset_id: a.id, source_in: 0, label: a.name, enabled: true, volume: 1, opacity: 1, z_index: 0, text: null, metadata: {}, transform: baseTransform(), transitions: baseTransitions(), keyframes: []};
+    t.items.push(item); selected = item.id; renderAll(); toast(`Agregado a ${t.label}`); if (kind === "video" && t.items.length === 1) setTimeout(() => detectScenesPrimary(false), 150);
+  }
+
+  function addAssetToSpecificTrack(asset, trackKind, at) {
