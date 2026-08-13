@@ -33,6 +33,7 @@ R27_HUB_CONTRACT = {
     "context_snapshots_action": 'action=="context-snapshots"',
     "context_compile": "/api/workspaces/context/compile",
     "context_snapshot": "/api/context-snapshots/",
+    "handoff_preview": "handoff-preview",
     "executive_action": 'action=="executive"',
     "executive_workspaces": "/api/executive-workspaces",
     "intelligence_action": 'action=="intelligence"',
