@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Record source identity
+      - name: Record exact R27 source identity
         run: |
           git rev-parse HEAD > SOURCE_SHA.txt
           git ls-files -z | tar --null -T - -czf BINARIOIA_R27_GIT_SOURCE.tar.gz
