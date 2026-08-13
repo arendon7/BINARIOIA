@@ -1,0 +1,140 @@
+    preferred=8795 if use_r26_video else int(special.get("port",0) or 0)
+    if not preferred: raise RuntimeError("La App no declara servicio.")
+    sid="binario-r26-video-studio" if use_r26_video else service_id_for(app)
+    port,reuse=choose_port(preferred,sid)
+    project_id=str(payload.get("project_id") or "").strip()
+    def final_url(base_port):
+        suffix=f"?project={quote(project_id)}" if use_r26_video and project_id else ("?from=hub&release=0.27.0" if use_r26_video else "?from=hub&release=0.25.1-a1")
+        return f"http://127.0.0.1:{base_port}/{suffix}"
+    if reuse and _service_root_ok(port,app):
+        return final_url(port)
+    if reuse:
+        try:
+            from common.ports import forget
+            forget(sid)
+        except Exception:
+            pass
+        candidate=preferred+1
+        while candidate<preferred+121 and not port_is_free(candidate): candidate+=1
+        port=candidate if candidate<preferred+121 else choose_port(0,sid)[0]
+    app_dir=Path(app["_dir"])
+    module="r26.r26_video_studio.server" if use_r26_video else special["module"]
+    if use_r26_video:
+        cmd=[sys.executable,"-m",module,"--port",str(port)]
+    elif app["id"]=="11-documentos-ia":
+        cmd=[sys.executable,"-m",module,"--root",str(app_dir),"--project",str(ensure_documents_project(app_dir,payload.get("project"))),"--port",str(port)]
+    else:
+        cmd=[sys.executable,"-m",module,"--port",str(port)]
+    logs=Path.home()/"Library"/"Logs"/"Binario IA"; logs.mkdir(parents=True,exist_ok=True)
+    log_path=logs/f"{app['id']}.log"; log=log_path.open("a",encoding="utf-8")
+    env=process_env(app_dir); env["BINARIO_SERVICE_ID"]=sid; env["BINARIO_HUB_URL"]=os.environ.get("BINARIO_HUB_URL",f"http://127.0.0.1:{HUB_PORT}")
+    if payload.get("workspace_id"): env["BINARIO_WORKSPACE_ID"]=str(payload.get("workspace_id"))
+    if project_id: env["BINARIO_PROJECT_ID"]=project_id
+    if payload.get("context_snapshot_id"): env["BINARIO_CONTEXT_SNAPSHOT_ID"]=str(payload.get("context_snapshot_id"))
+    if payload.get("context_hash"): env["BINARIO_CONTEXT_HASH"]=str(payload.get("context_hash"))
+    if isinstance(payload.get("context_contract"),dict): env["BINARIO_CONTEXT_CONTRACT_VERSION"]=str(payload["context_contract"].get("contract_version") or "1")
+    proc=subprocess.Popen(cmd,cwd=str(ROOT if use_r26_video else app_dir),env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+    with LOCK: SERVICES[app["id"]]=proc
+    for _ in range(120):
+        if _service_root_ok(port,app):
+            record(sid,port,pid=proc.pid,meta={"app_id":app["id"],"name":app["name"],"release":"0.27.0" if use_r26_video else "0.25.1-a1","root":str(ROOT)})
+            return final_url(port)
+        if proc.poll() is not None: break
+        time.sleep(.1)
+    raise RuntimeError(f"El servicio {app['name']} no inició correctamente. Revisa {log_path}")
+
+def runtime_status():
+    try:
+        from runtime.runtime_manager import catalog
+        cat=catalog(ROOT)
+    except Exception as exc:
+        cat={"runtime_root":None,"persistent":False,"essential_ready":False,"essential_ok":0,"essential_total":0,"tools":{},"brew":{"healthy":False,"detail":str(exc)}}
+    tools=cat.get("tools",{})
+    whisper_tool=tools.get("whisper",{})
+    whisper={
+        "ready":whisper_tool.get("status")=="ok",
+        "installed":whisper_tool.get("status") in {"ok","broken"},
+        "package_present":bool(whisper_tool.get("version")),
+        "version":whisper_tool.get("version"),
+        "model_path":whisper_tool.get("path"),
+        "message":whisper_tool.get("note"),
+        "import_error":whisper_tool.get("detail"),
+    }
+    try:
+        from common.ai_gateway import overview as ai_overview
+        aio=ai_overview([])
+        ai_status={"providers_configured":sum(1 for x in aio.get("providers",[]) if x.get("secret",{}).get("configured")),"usage":aio.get("usage",{}),"budget":aio.get("budget_status",{}),"gateway_mode":aio.get("gateway_mode")}
+    except Exception as exc:
+        ai_status={"error":f"{type(exc).__name__}: {exc}"}
+    return {
+        "root":str(ROOT),"python":sys.version.split()[0],"tools":tools,
+        "runtime_root":cat.get("runtime_root"),"runtime_persistent":cat.get("persistent",False),
+        "essential_ready":cat.get("essential_ready",False),"essential_ok":cat.get("essential_ok",0),"essential_total":cat.get("essential_total",0),
+        "brew":cat.get("brew",{}),
+        "video_ready":cat.get("essential_ready",False),
+        "documents_pdf_ready":True,
+        "whisper":whisper,"services":services_state(),
+        "runtime_job":dict(RUNTIME_JOB),"ai":ai_status,
+    }
+
+def start_runtime_repair(scope="essential"):
+    with RUNTIME_JOB_LOCK:
+        if RUNTIME_JOB.get("running"):
+            return {"status":"already_running","job":dict(RUNTIME_JOB)}
+        RUNTIME_JOB.update({"running":True,"progress":0.01,"message":"Iniciando reparación…","result":None,"error":None,"scope":scope})
+    def worker():
+        try:
+            from runtime.runtime_manager import repair
+            def progress(p,msg):
+                with RUNTIME_JOB_LOCK:RUNTIME_JOB.update({"progress":float(p),"message":str(msg)})
+            result=repair(scope,ROOT,progress)
+            with RUNTIME_JOB_LOCK:RUNTIME_JOB.update({"running":False,"progress":1.0,"message":"Runtime listo." if result.get("ok") else "La reparación terminó con pendientes.","result":result,"error":None})
+        except Exception as exc:
+            with RUNTIME_JOB_LOCK:RUNTIME_JOB.update({"running":False,"message":"Falló la reparación.","error":f"{type(exc).__name__}: {exc}"})
+    threading.Thread(target=worker,daemon=True).start()
+    return {"status":"started","job":dict(RUNTIME_JOB)}
+
+def workflow_list():
+    rows=[]
+    for p in (ROOT/"workflow/recipes").glob("*.json"):
+        d=json_load(p,{}) or {}; d["_file"]=p.name; rows.append(d)
+    rows.sort(key=lambda x:(x.get("name",""),x.get("version",0)))
+    return rows
+
+def execute_workflow(recipe, initial):
+    data=initial; trace=[]
+    for idx,step in enumerate(recipe.get("steps",[]),1):
+        app=app_by_id(step.get("app_id",""))
+        if not app: raise RuntimeError(f"App desconocida en workflow: {step.get('app_id')}")
+        if app.get("special_service"):
+            trace.append({"step":idx,"app":app["id"],"status":"manual_service","url":launch_service(app)})
+            continue
+        payload=dict(step.get("defaults") or {})
+        if step.get("pass_previous",True) and isinstance(data,dict):
+            payload.setdefault("previous",data)
+        payload.update(initial.get(app["id"],{}) if isinstance(initial.get(app["id"]),dict) else {})
+        out=load_engine(app).run(payload)
+        trace.append({"step":idx,"app":app["id"],"status":out.get("status"),"summary":out.get("summary"),"paths":out.get("paths")})
+        data=out
+        if out.get("status")=="blocked": break
+    return {"status":"pass" if trace and trace[-1]["status"]!="blocked" else "blocked","trace":trace,"last":data}
+
+class Handler(SimpleHTTPRequestHandler):
+    def log_message(self,fmt,*args): pass
+    def _json(self,data,status=200):
+        raw=json.dumps(data,ensure_ascii=False,indent=2,default=str).encode("utf-8")
+        self.send_response(status); self.send_header("Content-Type","application/json; charset=utf-8")
+        self.send_header("Content-Length",str(len(raw))); self.end_headers(); self.wfile.write(raw)
+    def _body(self):
+        n=int(self.headers.get("Content-Length","0") or 0)
+        raw=self.rfile.read(n) if n else b"{}"
+        return json.loads(raw or b"{}")
+    def _file(self,p):
+        p=Path(p)
+        if not p.exists() or not p.is_file():
+            self.send_error(404); return
+        data=p.read_bytes(); c=mimetypes.guess_type(str(p))[0] or "application/octet-stream"
+        self.send_response(200); self.send_header("Content-Type",c); self.send_header("Content-Length",str(len(data))); self.send_header("Cache-Control","no-cache"); self.end_headers(); self.wfile.write(data)
+    def do_GET(self):
+        parsed=urlparse(self.path)
+        path=unquote(parsed.path)
