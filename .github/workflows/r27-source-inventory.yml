@@ -1,0 +1,41 @@
+name: R27 source inventory
+
+on:
+  push:
+    branches: ['audit/r27-full-source']
+    paths: ['.github/workflows/r27-source-inventory.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build repository source inventory
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root=Path('.')
+          skip={'.git','.pytest_cache','__pycache__'}
+          rows=[]
+          for p in sorted((p for p in root.rglob('*') if p.is_file()), key=lambda p:p.as_posix()):
+              rel=p.as_posix()
+              if any(part in skip for part in p.parts): continue
+              b=p.read_bytes()
+              rows.append({'path':rel,'size':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+          Path('r27-current-source-inventory.json').write_text(json.dumps({'commit':'${{ github.sha }}','files':rows},separators=(',',':')))
+          print('FILES',len(rows),'BYTES',sum(r['size'] for r in rows))
+          for prefix in ('apps/','common/','hub/','runtime/','r26/','scripts/','tests/'):
+              subset=[r for r in rows if r['path'].startswith(prefix)]
+              print(prefix,len(subset),sum(r['size'] for r in subset))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r27-current-source-inventory
+          path: r27-current-source-inventory.json
+          retention-days: 7
