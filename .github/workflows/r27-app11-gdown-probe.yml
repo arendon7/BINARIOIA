@@ -19,7 +19,7 @@ jobs:
       - name: Download Drive file through gdown
         run: |
           python -m pip install -q gdown
-          gdown --id 1ufivwWBMohoPzaNj_8maCWWe8MTEQxrt -O /tmp/custody.bin
+          gdown 1ufivwWBMohoPzaNj_8maCWWe8MTEQxrt -O /tmp/custody.bin
           ls -lh /tmp/custody.bin
           file /tmp/custody.bin
           sha256sum /tmp/custody.bin
