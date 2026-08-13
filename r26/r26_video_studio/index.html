@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Binario IA · Video Studio R27</title>
+  <link rel="stylesheet" href="/video-studio.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">B</div>
+        <div><strong>Binario IA · Video Studio</strong><span>R27 en desarrollo · editor principal</span></div>
+      </div>
+      <div class="project-title-wrap">
+        <input id="projectName" class="project-title" value="Video nuevo" aria-label="Nombre del proyecto" />
+        <div class="project-save-line"><span id="saveState" class="save-state">Preparando proyecto…</span><span id="projectPath" class="project-path">Sin ruta todavía</span></div>
+      </div>
+      <div class="top-actions">
+        <a class="btn ghost" id="hubBtn" href="http://127.0.0.1:8780/">Inicio</a>
+        <button class="btn ghost" id="newProjectDiskBtn">Nuevo</button>
+        <button class="btn ghost" id="openProjectBtn">📁 Proyecto</button>
+        <button class="btn ghost" id="openExportsBtn">Salidas</button>
+        <button class="btn ghost" id="undoBtn" title="Deshacer ⌘Z">↶</button>
+        <button class="btn ghost" id="redoBtn" title="Rehacer ⇧⌘Z">↷</button>
+        <button class="btn ghost" id="simpleModeBtn">Modo simple</button>
+        <button class="btn ghost" id="engineStatusBtn" title="Estado FFmpeg / Whisper">Motor</button>
+        <button class="btn primary" id="exportBtn">Renderizar MP4</button>
+      </div>
+    </header>
+
+    <section class="workflow-quickbar" aria-label="Flujo rápido">
+      <span class="workflow-label">Flujo rápido</span>
+      <label class="workflow-step"><b>1</b><span>Importar</span><input id="quickImportInput" type="file" multiple accept="video/*,image/*,audio/*" hidden /></label>
+      <button class="workflow-step" id="quickTranscribeBtn"><b>2</b><span>Transcribir</span></button>
+      <button class="workflow-step" id="quickClipsBtn"><b>3</b><span>Crear clips</span></button>
+      <button class="workflow-step primary-step" id="quickRenderBtn"><b>4</b><span>Renderizar</span></button>
+      <span class="workflow-hint">Todo queda en el proyecto activo · originales intactos</span>
+    </section>
+
+    <main class="workspace">
+      <aside class="media-panel panel">
+        <div class="panel-head">
+          <div><strong>Recursos</strong><span>Video, imágenes, logos y audio</span></div>
+          <label class="icon-btn add-btn" title="Agregar recurso">+
+            <input id="assetInput" type="file" multiple accept="video/*,image/*,audio/*" hidden />
+          </label>
+        </div>
+        <div class="dropzone" id="dropzone">
+          <strong>Arrastra archivos aquí</strong>
+          <span>o pulsa + para agregarlos</span>
+        </div>
+        <div class="media-filter">
+          <button class="chip active" data-filter="all">Todos</button>
+          <button class="chip" data-filter="video">Video</button>
+          <button class="chip" data-filter="image">Imagen</button>
+          <button class="chip" data-filter="audio">Audio</button>
+        </div>
+        <div id="assetList" class="asset-list"></div>
+      </aside>
+
+      <section class="editor-center">
+        <div class="sequence-tabs-row panel">
+          <div id="sequenceTabs" class="sequence-tabs"></div>
+          <button class="btn small" id="newClipBtn">+ Clip</button>
+        </div>
+
+        <div class="preview-stage panel">
+          <div class="preview-toolbar">
+            <div class="segmented">
+              <button data-ratio="16:9" class="active">16:9</button>
+              <button data-ratio="9:16">9:16</button>
+              <button data-ratio="1:1">1:1</button>
+            </div>
+            <div class="preview-tools">
+              <label class="toggle-label"><input id="safeZonesToggle" type="checkbox" checked /> zonas seguras</label>
+              <button class="btn small ghost" id="fitBtn">Ajustar</button>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <div id="videoCanvas" class="video-canvas ratio-16-9">
+              <div class="placeholder-scene" id="placeholderScene">
+                <span>Vista previa</span>
+                <small id="previewStatus">Agrega un video principal</small>
+              </div>
+              <video id="mainPreviewVideo" class="main-preview-media hidden" muted playsinline preload="metadata"></video>
+              <video id="brollPreviewVideo" class="overlay-preview-media hidden" muted playsinline preload="metadata"></video>
+              <img id="imagePreviewMedia" class="overlay-preview-media hidden" alt="" />
+              <div id="transformBox" class="transform-box hidden"><i class="transform-handle tl"></i><i class="transform-handle tr"></i><i class="transform-handle bl"></i><i class="transform-handle br"></i></div>
+              <div id="keyIdeaPreview" class="key-idea-preview hidden">Idea clave editable</div>
+              <div id="imagePreview" class="image-preview hidden">IMAGEN / B-ROLL</div>
+              <div id="subtitlePreview" class="subtitle-preview">Los subtítulos blancos inferiores siguen disponibles.</div>
+              <div id="safeZones" class="safe-zones"><i></i></div>
+            </div>
+          </div>
+          <div class="transport">
+            <button class="icon-btn" id="prevBtn">|◀</button>
+            <button class="play-btn" id="playBtn">▶</button>
+            <button class="icon-btn" id="nextBtn">▶|</button>
+            <span id="timecode" class="timecode">00:00.00 / 01:00.00</span>
+            <div class="transport-spacer"></div>
+            <button class="btn small ghost" id="detectScenesBtn">Escenas</button>
+            <button class="btn small ghost" id="splitBtn">Cortar en cursor</button>
+          </div>
+          <div class="scene-strip-wrap" id="sceneStripWrap">
+            <div class="scene-strip-head"><span><b>Escenas</b> · clic para ir · doble clic para crear clip</span><button class="scene-collapse" id="sceneCollapseBtn" title="Mostrar/ocultar escenas">⌃</button></div>
+            <div id="sceneStrip" class="scene-strip"><div class="scene-empty">Detecta escenas para navegar el video visualmente.</div></div>
+          </div>
+        </div>
+
+        <section class="timeline-panel panel">
+          <div class="timeline-toolbar">
+            <div class="tool-group">
+              <button class="btn small ghost" id="deleteBtn">Eliminar</button>
+              <button class="btn small ghost" id="duplicateBtn">Duplicar</button>
+              <button class="btn small ghost" id="splitTimelineBtn">Dividir</button>
+              <button class="btn small ghost" id="keyframeBtn">◆ Visual</button>
+              <button class="btn small ghost" id="audioKeyframeBtn">◆ Volumen</button>
+              <button class="btn small ghost" id="captionQuickBtn">+ Subtítulo</button>
+              <button class="btn small ghost" id="fitTimelineBtn">Ver todo</button>
+            </div>
+            <div class="tool-group">
+              <label class="toggle-label"><input id="snapToggle" type="checkbox" checked /> imán</label>
+              <label class="edit-mode-label">Edición<select id="timelineEditMode"><option value="magnetic">Magnética</option><option value="ripple">Ripple</option><option value="free">Libre</option></select></label>
+              <span class="zoom-label">Zoom</span><input id="zoomRange" type="range" min="4" max="24" value="10" />
+            </div>
+          </div>
+          <div class="timeline-scroll" id="timelineScroll">
+            <div class="timeline-ruler-row">
+              <div class="track-label ruler-label"></div>
+              <div class="ruler" id="ruler"></div>
+            </div>
+            <div id="tracks" class="tracks"></div>
+            <div id="playhead" class="playhead"><span></span></div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="inspector panel">
+        <div class="panel-head inspector-head"><div><strong>Inspector</strong><span id="inspectorSubtitle">Proyecto</span></div></div>
+        <div class="inspector-scroll">
+          <section class="inspector-card quick-card">
+            <strong>Controles rápidos</strong>
+            <label class="switch-row"><span><b>Ideas clave arriba</b><small>Texto automático superior</small></span><input id="keyIdeasToggle" type="checkbox" /></label>
+            <label class="switch-row"><span><b>Subtítulos</b><small>Blancos en la parte inferior</small></span><input id="subtitlesToggle" type="checkbox" checked /></label>
+            <label class="switch-row"><span><b>Normalizar voz</b><small>Mejora automática de audio</small></span><input id="normalizeToggle" type="checkbox" checked /></label>
+            <label class="switch-row"><span><b>Ducking música</b><small>Baja música cuando hay voz</small></span><input id="duckToggle" type="checkbox" checked /></label>
+          </section>
+
+          <section class="inspector-card" id="selectedInspector">
+            <strong>Elemento seleccionado</strong>
+            <div class="empty-inspector">Selecciona un elemento del timeline.</div>
+          </section>
+
+          <section class="inspector-card audio-master-card">
+            <div class="card-title-row"><strong>Audio profesional</strong><span id="audioStatus">master activo</span></div>
+            <label class="switch-row"><span><b>Reducción de ruido voz</b><small>FFmpeg afftdn</small></span><input id="denoiseToggle" type="checkbox" checked /></label>
+            <label class="switch-row"><span><b>Compresión de voz</b><small>nivela conversación y narración</small></span><input id="compressToggle" type="checkbox" checked /></label>
+            <label class="switch-row"><span><b>Limiter final</b><small>evita picos y clipping</small></span><input id="limiterToggle" type="checkbox" checked /></label>
+            <div class="field-grid three">
+              <label>LUFS<input id="targetLufs" type="number" min="-24" max="-8" step="0.5" value="-14" /></label>
+              <label>True peak<input id="truePeak" type="number" min="-6" max="-0.1" step="0.1" value="-1" /></label>
+              <label>Música<input id="musicGain" type="number" min="0" max="2" step="0.05" value="0.30" /></label>
+            </div>
+            <div class="inline-actions">
+              <button class="btn small" id="analyzeLoudnessBtn">Medir audio</button>
+              <span id="loudnessResult" class="mini-meta">Sin medición</span>
+            </div>
+          </section>
+
+          <section class="inspector-card media-performance-card advanced-card">
+            <div class="card-title-row"><strong>Rendimiento</strong><span id="proxyStatus">originales</span></div>
+            <label class="switch-row"><span><b>Usar proxies</b><small>preview liviano; exporta desde originales</small></span><input id="proxyToggle" type="checkbox" checked /></label>
+            <label class="inspector-field"><span>Aceleración</span><select id="hardwareAccelerationSelect"><option value="auto">Auto · Apple Silicon</option><option value="off">Software</option></select></label>
+            <button class="btn small ghost wide" id="proxyPrimaryBtn">Crear proxy del video principal</button>
+            <div id="engineState" class="engine-state">Comprobando FFmpeg / Whisper…</div>
+          </section>
+
+          <section class="inspector-card transcript-card">
+            <div class="card-title-row"><strong>Transcripción</strong><span id="transcriptState">sin transcripción</span></div>
+            <div class="inline-actions">
+              <button class="btn small" id="transcribeBtn">Transcribir video</button>
+              <label class="btn small ghost">Importar SRT/VTT<input id="subtitleImportInput" type="file" accept=".srt,.vtt,text/vtt" hidden /></label>
+            </div>
+            <div id="transcriptList" class="transcript-list"><div class="empty-inspector">Los segmentos aparecerán aquí y en la pista de subtítulos.</div></div>
+          </section>
+
+          <section class="inspector-card clipper-card">
+            <div class="card-title-row"><strong>Social Clipper</strong><span>integrado</span></div>
+            <div class="field-grid three">
+              <label>Objetivo (s)<input id="clipTarget" type="number" min="15" max="60" value="35" /></label>
+              <label>Mín. (s)<input id="clipMin" type="number" min="5" max="60" value="15" /></label>
+              <label>Máx. (s)<input id="clipMax" type="number" min="10" max="120" value="60" /></label>
+            </div>
+            <button class="btn small primary wide" id="generateClipCandidatesBtn">Buscar mejores clips</button>
+            <div id="clipCandidates" class="clip-candidates"><div class="empty-inspector">Usa la transcripción para proponer clips editables.</div></div>
+          </section>
+
+          <section class="inspector-card silence-card advanced-card">
+            <div class="card-title-row"><strong>Silencios / ripple</strong><span id="silenceState">sin analizar</span></div>
+            <div class="field-grid three">
+              <label>Umbral dB<input id="silenceNoise" type="number" min="-80" max="-10" step="1" value="-35" /></label>
+              <label>Mínimo s<input id="silenceMin" type="number" min="0.1" max="10" step="0.05" value="0.45" /></label>
+              <label>Respirar s<input id="silencePadding" type="number" min="0" max="1" step="0.02" value="0.12" /></label>
+            </div>
+            <div class="inline-actions">
+              <button class="btn small" id="detectSilenceBtn">Detectar</button>
+              <button class="btn small primary" id="applySilenceBtn" disabled>Aplicar ripple</button>
+            </div>
+            <div id="silenceSummary" class="mini-meta silence-summary">No se modifica nada hasta que confirmes Aplicar ripple.</div>
+          </section>
+
+          <section class="inspector-card advanced-card">
+            <strong>Acciones inteligentes</strong>
+            <button class="action-card" data-smart="silence"><b>Limpiar silencios</b><span>Detecta pausas largas sin destruir el original.</span></button>
+            <button class="action-card" data-smart="broll"><b>Sugerir B-roll</b><span>Ubica imágenes o video sobre momentos relevantes.</span></button>
+            <button class="action-card" data-smart="captions"><b>Revisar subtítulos</b><span>Corrección rápida antes de exportar.</span></button>
+            <button class="action-card" data-smart="clips"><b>Crear clips sociales</b><span>Genera candidatos desde el video largo.</span></button>
+          </section>
+
+          <section class="inspector-card render-card">
+            <div class="card-title-row"><strong>Salida</strong><span id="publishPresetState">configuración manual</span></div>
+            <label class="inspector-field publish-preset-field"><span>Publicar para</span><select id="publishPresetSelect"><option value="">Manual</option><option value="reels">Instagram Reels</option><option value="tiktok">TikTok</option><option value="shorts">YouTube Shorts</option><option value="youtube">YouTube 1080p</option><option value="square">Feed cuadrado</option><option value="archive">Master archivo</option></select></label>
+            <div class="field-grid">
+              <label>Calidad<select id="qualitySelect"><option>Alta · H.264</option><option>Rápida · H.264</option><option>Máxima · H.264</option></select></label>
+              <label>FPS<select id="fpsSelect"><option>30</option><option>24</option><option>60</option></select></label>
+            </div>
+            <div class="inline-actions"><button class="btn small" id="renderAllClipsBtn">Renderizar todos los clips</button><button class="btn small ghost" id="exportPlanBtn">Guardar plan JSON</button><button class="btn small ghost" id="openLastRenderBtn">Abrir salidas</button></div>
+            <div class="render-progress"><i id="renderProgressBar"></i></div>
+            <div id="renderQueue" class="render-queue">Sin renders pendientes.</div>
+          </section>
+        </div>
+      </aside>
+    </main>
+    <div id="toast" class="toast hidden"></div>
+  </div>
+  <script src="/video-studio.js"></script>
+</body>
+</html>
