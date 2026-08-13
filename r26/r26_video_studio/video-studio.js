@@ -3,6 +3,8 @@
 
   const assemblyContract = Object.freeze({
     schema: "sbia-video-studio-r27-assembly-1.0",
+    product: "Binario IA · Video Studio",
+    primaryFlowLabel: "Importar → Transcribir → Clips → Renderizar",
     editingModeStorageKey: "binario_video_r26_editing_mode",
     requiredSymbols: [
       "persistEditingMode",
