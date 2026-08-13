@@ -1,0 +1,714 @@
+        if path=="/api/system/apps/projects-root-contract":
+            from common.app_status_store import projects_root_contract_summary
+            return self._json(projects_root_contract_summary())
+        if path=="/api/system/apps/physical-project-contract":
+            from common.app_status_store import physical_project_contract_summary
+            return self._json(physical_project_contract_summary())
+        if path=="/api/system/apps/legacy-project-contract":
+            from common.app_status_store import legacy_project_contract_summary
+            return self._json(legacy_project_contract_summary())
+        if path=="/api/system/apps/storage-migration-contract":
+            from common.app_status_store import storage_migration_contract_summary
+            return self._json(storage_migration_contract_summary())
+        if path=="/api/system/apps/app-factory-storage-contract":
+            from common.app_status_store import app_factory_storage_contract_summary
+            return self._json(app_factory_storage_contract_summary())
+        if path=="/api/system/apps/project-files-contract":
+            from common.app_status_store import project_files_contract_summary
+            return self._json(project_files_contract_summary())
+        if path=="/api/system/apps/project-search-contract":
+            from common.app_status_store import project_search_contract_summary
+            return self._json(project_search_contract_summary())
+        if path=="/api/system/apps/project-finder-contract":
+            from common.app_status_store import project_finder_contract_summary
+            return self._json(project_finder_contract_summary())
+        if path=="/api/system/apps/whisper-self-test-contract":
+            from common.app_status_store import whisper_self_test_contract_summary
+            return self._json(whisper_self_test_contract_summary())
+        if path=="/api/system/apps/whisper-jobs-contract":
+            from common.app_status_store import whisper_jobs_contract_summary
+            return self._json(whisper_jobs_contract_summary())
+        if path=="/api/system/apps/whisper-fail-isolation-contract":
+            from common.app_status_store import whisper_fail_isolation_contract_summary
+            return self._json(whisper_fail_isolation_contract_summary())
+        if path=="/api/system/apps/whisper-architecture-contract":
+            from common.app_status_store import whisper_architecture_contract_summary
+            return self._json(whisper_architecture_contract_summary())
+        if path=="/api/system/apps/whisper-model-cache-contract":
+            from common.app_status_store import whisper_model_cache_contract_summary
+            return self._json(whisper_model_cache_contract_summary())
+        if path=="/api/system/apps/video-simple-contract":
+            from common.app_status_store import video_simple_contract_summary
+            return self._json(video_simple_contract_summary())
+        if path=="/api/system/apps/video-project-contract":
+            from common.app_status_store import video_project_contract_summary
+            return self._json(video_project_contract_summary())
+        if path=="/api/system/apps/video-hub-contract":
+            from common.app_status_store import video_hub_contract_summary
+            return self._json(video_hub_contract_summary())
+        if path=="/api/system/apps/video-runtime-contract":
+            from common.app_status_store import video_runtime_contract_summary
+            return self._json(video_runtime_contract_summary())
+        if path=="/api/system/apps/video-whisper-contract":
+            from common.app_status_store import video_whisper_contract_summary
+            return self._json(video_whisper_contract_summary())
+        if path=="/api/system/apps/video-ffmpeg-contract":
+            from common.app_status_store import video_ffmpeg_contract_summary
+            return self._json(video_ffmpeg_contract_summary())
+        if path=="/api/system/apps/video-render-contract":
+            from common.app_status_store import video_render_contract_summary
+            return self._json(video_render_contract_summary())
+        if path=="/api/system/apps/video-export-contract":
+            from common.app_status_store import video_export_contract_summary
+            return self._json(video_export_contract_summary())
+        if path=="/api/system/apps/video-audio-contract":
+            from common.app_status_store import video_audio_contract_summary
+            return self._json(video_audio_contract_summary())
+        if path=="/api/system/apps/video-proxy-contract":
+            from common.app_status_store import video_proxy_contract_summary
+            return self._json(video_proxy_contract_summary())
+        if path=="/api/system/apps/video-scenes-contract":
+            from common.app_status_store import video_scenes_contract_summary
+            return self._json(video_scenes_contract_summary())
+        if path=="/api/system/apps/video-silence-contract":
+            from common.app_status_store import video_silence_contract_summary
+            return self._json(video_silence_contract_summary())
+        if path=="/api/system/apps/video-social-clipper-contract":
+            from common.app_status_store import video_social_clipper_contract_summary
+            return self._json(video_social_clipper_contract_summary())
+        if path=="/api/system/apps/video-captions-contract":
+            from common.app_status_store import video_captions_contract_summary
+            return self._json(video_captions_contract_summary())
+        if path=="/api/system/apps/video-assets-contract":
+            from common.app_status_store import video_assets_contract_summary
+            return self._json(video_assets_contract_summary())
+        if path=="/api/system/apps/video-color-contract":
+            from common.app_status_store import video_color_contract_summary
+            return self._json(video_color_contract_summary())
+        if path=="/api/system/apps/video-transitions-contract":
+            from common.app_status_store import video_transitions_contract_summary
+            return self._json(video_transitions_contract_summary())
+        if path=="/api/system/apps/video-keyframes-contract":
+            from common.app_status_store import video_keyframes_contract_summary
+            return self._json(video_keyframes_contract_summary())
+        if path=="/api/system/apps/video-timeline-contract":
+            from common.app_status_store import video_timeline_contract_summary
+            return self._json(video_timeline_contract_summary())
+        if path=="/api/system/apps/video-batch-contract":
+            from common.app_status_store import video_batch_contract_summary
+            return self._json(video_batch_contract_summary())
+        if path=="/api/system/apps/video-apple-silicon-contract":
+            from common.app_status_store import video_apple_silicon_contract_summary
+            return self._json(video_apple_silicon_contract_summary())
+        if path=="/api/system/apps/video-publish-contract":
+            from common.app_status_store import video_publish_contract_summary
+            return self._json(video_publish_contract_summary())
+        if path=="/api/system/apps/video-workflow-contract":
+            from common.app_status_store import video_workflow_contract_summary
+            return self._json(video_workflow_contract_summary())
+        if path=="/api/system/apps/video-focus-contract":
+            from common.app_status_store import video_focus_contract_summary
+            return self._json(video_focus_contract_summary())
+        if path=="/api/system/apps/video-waveform-contract":
+            from common.app_status_store import video_waveform_contract_summary
+            return self._json(video_waveform_contract_summary())
+        if path=="/api/system/apps/video-loudness-contract":
+            from common.app_status_store import video_loudness_contract_summary
+            return self._json(video_loudness_contract_summary())
+        if path=="/api/system/apps/video-thumbnail-contract":
+            from common.app_status_store import video_thumbnail_contract_summary
+            return self._json(video_thumbnail_contract_summary())
+        if path=="/api/system/apps/video-broll-contract":
+            from common.app_status_store import video_broll_contract_summary
+            return self._json(video_broll_contract_summary())
+        if path=="/api/system/apps/video-images-contract":
+            from common.app_status_store import video_images_contract_summary
+            return self._json(video_images_contract_summary())
+        if path=="/api/system/apps/video-music-contract":
+            from common.app_status_store import video_music_contract_summary
+            return self._json(video_music_contract_summary())
+        if path=="/api/system/apps/video-external-audio-contract":
+            from common.app_status_store import video_external_audio_contract_summary
+            return self._json(video_external_audio_contract_summary())
+        if path=="/api/system/apps/video-key-ideas-contract":
+            from common.app_status_store import video_key_ideas_contract_summary
+            return self._json(video_key_ideas_contract_summary())
+        if path=="/api/system/apps/video-caption-style-contract":
+            from common.app_status_store import video_caption_style_contract_summary
+            return self._json(video_caption_style_contract_summary())
+        if path=="/api/system/apps/video-ripple-contract":
+            from common.app_status_store import video_ripple_contract_summary
+            return self._json(video_ripple_contract_summary())
+        if path=="/api/system/apps/video-magnetic-contract":
+            from common.app_status_store import video_magnetic_contract_summary
+            return self._json(video_magnetic_contract_summary())
+        if path=="/api/system/apps/video-prores-contract":
+            from common.app_status_store import video_prores_contract_summary
+            return self._json(video_prores_contract_summary())
+        if path=="/api/system/apps/video-autosave-contract":
+            from common.app_status_store import video_autosave_contract_summary
+            return self._json(video_autosave_contract_summary())
+        if path=="/api/system/apps/video-physical-storage-contract":
+            from common.app_status_store import video_physical_storage_contract_summary
+            return self._json(video_physical_storage_contract_summary())
+        if path=="/api/system/apps/video-localstorage-contract":
+            from common.app_status_store import video_localstorage_contract_summary
+            return self._json(video_localstorage_contract_summary())
+        if path=="/api/system/apps/video-uninstall-contract":
+            from common.app_status_store import video_uninstall_contract_summary
+            return self._json(video_uninstall_contract_summary())
+        if path=="/api/system/apps/video-project-search-contract":
+            from common.app_status_store import video_project_search_contract_summary
+            return self._json(video_project_search_contract_summary())
+        if path=="/api/system/apps/video-project-open-contract":
+            from common.app_status_store import video_project_open_contract_summary
+            return self._json(video_project_open_contract_summary())
+        if path=="/api/system/apps/video-project-assets-contract":
+            from common.app_status_store import video_project_assets_contract_summary
+            return self._json(video_project_assets_contract_summary())
+        if path=="/api/system/apps/video-project-exports-contract":
+            from common.app_status_store import video_project_exports_contract_summary
+            return self._json(video_project_exports_contract_summary())
+        if path=="/api/system/apps/video-project-training-contract":
+            from common.app_status_store import video_project_training_contract_summary
+            return self._json(video_project_training_contract_summary())
+        if path=="/api/system/apps/video-project-logs-contract":
+            from common.app_status_store import video_project_logs_contract_summary
+            return self._json(video_project_logs_contract_summary())
+        if path=="/api/system/apps/video-project-autosave-contract":
+            from common.app_status_store import video_project_autosave_contract_summary
+            return self._json(video_project_autosave_contract_summary())
+        if path=="/api/system/apps/video-project-preserve-contract":
+            from common.app_status_store import video_project_preserve_contract_summary
+            return self._json(video_project_preserve_contract_summary())
+        if path=="/api/system/apps/video-project-manifest-contract":
+            from common.app_status_store import video_project_manifest_contract_summary
+            return self._json(video_project_manifest_contract_summary())
+        if path=="/api/system/apps/video-project-schema-contract":
+            from common.app_status_store import video_project_schema_contract_summary
+            return self._json(video_project_schema_contract_summary())
+        if path=="/api/system/apps/video-project-migrate-contract":
+            from common.app_status_store import video_project_migrate_contract_summary
+            return self._json(video_project_migrate_contract_summary())
+        if path=="/api/system/apps/video-project-handoff-contract":
+            from common.app_status_store import video_project_handoff_contract_summary
+            return self._json(video_project_handoff_contract_summary())
+        if path=="/api/system/apps/video-project-same-id-contract":
+            from common.app_status_store import video_project_same_id_contract_summary
+            return self._json(video_project_same_id_contract_summary())
+        if path=="/api/system/apps/video-project-same-window-contract":
+            from common.app_status_store import video_project_same_window_contract_summary
+            return self._json(video_project_same_window_contract_summary())
+        if path=="/api/system/apps/video-simple-persistent-contract":
+            from common.app_status_store import video_simple_persistent_contract_summary
+            return self._json(video_simple_persistent_contract_summary())
+        if path=="/api/system/apps/video-simple-essential-contract":
+            from common.app_status_store import video_simple_essential_contract_summary
+            return self._json(video_simple_essential_contract_summary())
+        if path=="/api/system/apps/video-simple-transcript-contract":
+            from common.app_status_store import video_simple_transcript_contract_summary
+            return self._json(video_simple_transcript_contract_summary())
+        if path=="/api/system/apps/video-simple-clipper-contract":
+            from common.app_status_store import video_simple_clipper_contract_summary
+            return self._json(video_simple_clipper_contract_summary())
+        if path=="/api/system/apps/video-simple-render-contract":
+            from common.app_status_store import video_simple_render_contract_summary
+            return self._json(video_simple_render_contract_summary())
+        if path=="/api/system/apps/video-simple-inspector-contract":
+            from common.app_status_store import video_simple_inspector_contract_summary
+            return self._json(video_simple_inspector_contract_summary())
+        if path=="/api/system/apps/video-simple-advanced-hidden-contract":
+            from common.app_status_store import video_simple_advanced_hidden_contract_summary
+            return self._json(video_simple_advanced_hidden_contract_summary())
+        if path=="/api/system/apps/video-pro-complete-contract":
+            from common.app_status_store import video_pro_complete_contract_summary
+            return self._json(video_pro_complete_contract_summary())
+        if path=="/api/system/apps/video-engine-status-contract":
+            from common.app_status_store import video_engine_status_contract_summary
+            return self._json(video_engine_status_contract_summary())
+        if path=="/api/system/apps/video-engine-fallback-contract":
+            from common.app_status_store import video_engine_fallback_contract_summary
+            return self._json(video_engine_fallback_contract_summary())
+        if path=="/api/system/apps/video-engine-r25-contract":
+            from common.app_status_store import video_engine_r25_contract_summary
+            return self._json(video_engine_r25_contract_summary())
+        if path=="/api/system/apps/video-engine-native-contract":
+            from common.app_status_store import video_engine_native_contract_summary
+            return self._json(video_engine_native_contract_summary())
+        if path=="/api/system/apps/video-engine-nonfatal-whisper-contract":
+            from common.app_status_store import video_engine_nonfatal_whisper_contract_summary
+            return self._json(video_engine_nonfatal_whisper_contract_summary())
+        if path=="/api/system/apps/video-engine-architecture-contract":
+            from common.app_status_store import video_engine_architecture_contract_summary
+            return self._json(video_engine_architecture_contract_summary())
+        if path=="/api/system/apps/video-engine-videotoolbox-contract":
+            from common.app_status_store import video_engine_videotoolbox_contract_summary
+            return self._json(video_engine_videotoolbox_contract_summary())
+        if path=="/api/system/apps/video-engine-batch-contract":
+            from common.app_status_store import video_engine_batch_contract_summary
+            return self._json(video_engine_batch_contract_summary())
+        if path=="/api/system/apps/video-engine-waveform-contract":
+            from common.app_status_store import video_engine_waveform_contract_summary
+            return self._json(video_engine_waveform_contract_summary())
+        if path=="/api/system/apps/video-engine-loudness-contract":
+            from common.app_status_store import video_engine_loudness_contract_summary
+            return self._json(video_engine_loudness_contract_summary())
+        if path=="/api/system/apps/video-engine-proxy-contract":
+            from common.app_status_store import video_engine_proxy_contract_summary
+            return self._json(video_engine_proxy_contract_summary())
+        if path=="/api/system/apps/video-engine-thumbnail-contract":
+            from common.app_status_store import video_engine_thumbnail_contract_summary
+            return self._json(video_engine_thumbnail_contract_summary())
+        if path=="/api/system/apps/video-engine-scenes-contract":
+            from common.app_status_store import video_engine_scenes_contract_summary
+            return self._json(video_engine_scenes_contract_summary())
+        if path=="/api/system/apps/video-engine-silence-contract":
+            from common.app_status_store import video_engine_silence_contract_summary
+            return self._json(video_engine_silence_contract_summary())
+        if path=="/api/system/apps/video-engine-color-contract":
+            from common.app_status_store import video_engine_color_contract_summary
+            return self._json(video_engine_color_contract_summary())
+        if path=="/api/system/apps/video-engine-transition-contract":
+            from common.app_status_store import video_engine_transition_contract_summary
+            return self._json(video_engine_transition_contract_summary())
+        if path=="/api/system/apps/video-engine-keyframe-contract":
+            from common.app_status_store import video_engine_keyframe_contract_summary
+            return self._json(video_engine_keyframe_contract_summary())
+        if path=="/api/system/apps/video-engine-audio-automation-contract":
+            from common.app_status_store import video_engine_audio_automation_contract_summary
+            return self._json(video_engine_audio_automation_contract_summary())
+        if path=="/api/system/apps/video-engine-export-preset-contract":
+            from common.app_status_store import video_engine_export_preset_contract_summary
+            return self._json(video_engine_export_preset_contract_summary())
+        if path=="/api/system/apps/video-engine-social-clipper-contract":
+            from common.app_status_store import video_engine_social_clipper_contract_summary
+            return self._json(video_engine_social_clipper_contract_summary())
+        if path=="/api/system/apps/video-engine-transcript-contract":
+            from common.app_status_store import video_engine_transcript_contract_summary
+            return self._json(video_engine_transcript_contract_summary())
+        if path=="/api/system/apps/video-engine-caption-contract":
+            from common.app_status_store import video_engine_caption_contract_summary
+            return self._json(video_engine_caption_contract_summary())
+        if path=="/api/system/apps/video-engine-broll-contract":
+            from common.app_status_store import video_engine_broll_contract_summary
+            return self._json(video_engine_broll_contract_summary())
+        if path=="/api/system/apps/video-engine-image-contract":
+            from common.app_status_store import video_engine_image_contract_summary
+            return self._json(video_engine_image_contract_summary())
+        if path=="/api/system/apps/video-engine-music-contract":
+            from common.app_status_store import video_engine_music_contract_summary
+            return self._json(video_engine_music_contract_summary())
+        if path=="/api/system/apps/video-engine-external-audio-contract":
+            from common.app_status_store import video_engine_external_audio_contract_summary
+            return self._json(video_engine_external_audio_contract_summary())
+        if path=="/api/system/apps/video-engine-key-ideas-contract":
+            from common.app_status_store import video_engine_key_ideas_contract_summary
+            return self._json(video_engine_key_ideas_contract_summary())
+        if path=="/api/system/apps/video-engine-clipper-embedded-contract":
+            from common.app_status_store import video_engine_clipper_embedded_contract_summary
+            return self._json(video_engine_clipper_embedded_contract_summary())
+        if path=="/api/system/apps/video-engine-simple-mode-contract":
+            from common.app_status_store import video_engine_simple_mode_contract_summary
+            return self._json(video_engine_simple_mode_contract_summary())
+        if path=="/api/system/apps/video-engine-hub-contract":
+            from common.app_status_store import video_engine_hub_contract_summary
+            return self._json(video_engine_hub_contract_summary())
+        if path=="/api/system/apps/video-engine-project-contract":
+            from common.app_status_store import video_engine_project_contract_summary
+            return self._json(video_engine_project_contract_summary())
+        if path=="/api/system/apps/video-engine-whisper-contract":
+            from common.app_status_store import video_engine_whisper_contract_summary
+            return self._json(video_engine_whisper_contract_summary())
+        if path=="/api/system/apps/video-engine-mac-contract":
+            from common.app_status_store import video_engine_mac_contract_summary
+            return self._json(video_engine_mac_contract_summary())
+        if path=="/api/system/apps/video-engine-uat-contract":
+            from common.app_status_store import video_engine_uat_contract_summary
+            return self._json(video_engine_uat_contract_summary())
+        if path=="/api/system/apps/video-engine-release-contract":
+            from common.app_status_store import video_engine_release_contract_summary
+            return self._json(video_engine_release_contract_summary())
+        if path=="/api/system/apps/video-engine-source-contract":
+            from common.app_status_store import video_engine_source_contract_summary
+            return self._json(video_engine_source_contract_summary())
+        if path=="/api/system/apps/video-engine-ledger-contract":
+            from common.app_status_store import video_engine_ledger_contract_summary
+            return self._json(video_engine_ledger_contract_summary())
+        if path=="/api/system/apps/video-engine-regression-contract":
+            from common.app_status_store import video_engine_regression_contract_summary
+            return self._json(video_engine_regression_contract_summary())
+        if path=="/api/system/apps/video-engine-certification-contract":
+            from common.app_status_store import video_engine_certification_contract_summary
+            return self._json(video_engine_certification_contract_summary())
+        if path=="/api/system/apps/video-engine-no-regression-contract":
+            from common.app_status_store import video_engine_no_regression_contract_summary
+            return self._json(video_engine_no_regression_contract_summary())
+        if path=="/api/system/apps/video-engine-r26-preserve-contract":
+            from common.app_status_store import video_engine_r26_preserve_contract_summary
+            return self._json(video_engine_r26_preserve_contract_summary())
+        if path=="/api/system/apps/video-engine-r27-improve-contract":
+            from common.app_status_store import video_engine_r27_improve_contract_summary
+            return self._json(video_engine_r27_improve_contract_summary())
+        if path=="/api/system/apps/video-engine-final-contract":
+            from common.app_status_store import video_engine_final_contract_summary
+            return self._json(video_engine_final_contract_summary())
+        if path=="/api/system/apps/video-engine-download-contract":
+            from common.app_status_store import video_engine_download_contract_summary
+            return self._json(video_engine_download_contract_summary())
+        if path=="/api/system/apps/video-engine-git-contract":
+            from common.app_status_store import video_engine_git_contract_summary
+            return self._json(video_engine_git_contract_summary())
+        if path=="/api/system/apps/video-engine-main-contract":
+            from common.app_status_store import video_engine_main_contract_summary
+            return self._json(video_engine_main_contract_summary())
+        if path=="/api/system/apps/video-engine-develop-contract":
+            from common.app_status_store import video_engine_develop_contract_summary
+            return self._json(video_engine_develop_contract_summary())
+        if path=="/api/system/apps/video-engine-feature-contract":
+            from common.app_status_store import video_engine_feature_contract_summary
+            return self._json(video_engine_feature_contract_summary())
+        if path=="/api/system/apps/video-engine-fix-contract":
+            from common.app_status_store import video_engine_fix_contract_summary
+            return self._json(video_engine_fix_contract_summary())
+        if path=="/api/system/apps/video-engine-chore-contract":
+            from common.app_status_store import video_engine_chore_contract_summary
+            return self._json(video_engine_chore_contract_summary())
+        if path=="/api/system/apps/video-engine-release-blocked-contract":
+            from common.app_status_store import video_engine_release_blocked_contract_summary
+            return self._json(video_engine_release_blocked_contract_summary())
+        if path=="/api/system/apps/video-engine-mac-ready-contract":
+            from common.app_status_store import video_engine_mac_ready_contract_summary
+            return self._json(video_engine_mac_ready_contract_summary())
+        if path=="/api/system/apps/video-engine-ready-contract":
+            from common.app_status_store import video_engine_ready_contract_summary
+            return self._json(video_engine_ready_contract_summary())
+        if path=="/api/system/apps/video-engine-release-ready-contract":
+            from common.app_status_store import video_engine_release_ready_contract_summary
+            return self._json(video_engine_release_ready_contract_summary())
+        if path=="/api/system/apps/video-engine-production-contract":
+            from common.app_status_store import video_engine_production_contract_summary
+            return self._json(video_engine_production_contract_summary())
+        if path=="/api/system/apps/video-engine-production-signoff-contract":
+            from common.app_status_store import video_engine_production_signoff_contract_summary
+            return self._json(video_engine_production_signoff_contract_summary())
+        if path=="/api/system/apps/video-engine-r27-contract":
+            from common.app_status_store import video_engine_r27_contract_summary
+            return self._json(video_engine_r27_contract_summary())
+        if path=="/api/system/apps/video-engine-r28-contract":
+            from common.app_status_store import video_engine_r28_contract_summary
+            return self._json(video_engine_r28_contract_summary())
+        if path=="/api/system/apps/video-engine-version-contract":
+            from common.app_status_store import video_engine_version_contract_summary
+            return self._json(video_engine_version_contract_summary())
+        if path=="/api/system/apps/video-engine-version-drift-contract":
+            from common.app_status_store import video_engine_version_drift_contract_summary
+            return self._json(video_engine_version_drift_contract_summary())
+        if path=="/api/system/apps/video-engine-version-center-contract":
+            from common.app_status_store import video_engine_version_center_contract_summary
+            return self._json(video_engine_version_center_contract_summary())
+        if path=="/api/system/apps/video-engine-version-audit-contract":
+            from common.app_status_store import video_engine_version_audit_contract_summary
+            return self._json(video_engine_version_audit_contract_summary())
+        if path=="/api/system/apps/video-engine-product-audit-contract":
+            from common.app_status_store import video_engine_product_audit_contract_summary
+            return self._json(video_engine_product_audit_contract_summary())
+        if path=="/api/system/apps/video-engine-product-gate-contract":
+            from common.app_status_store import video_engine_product_gate_contract_summary
+            return self._json(video_engine_product_gate_contract_summary())
+        if path=="/api/system/apps/video-engine-reconciliation-contract":
+            from common.app_status_store import video_engine_reconciliation_contract_summary
+            return self._json(video_engine_reconciliation_contract_summary())
+        if path=="/api/system/apps/video-engine-knowledge-contract":
+            from common.app_status_store import video_engine_knowledge_contract_summary
+            return self._json(video_engine_knowledge_contract_summary())
+        if path=="/api/system/apps/video-engine-obsidian-contract":
+            from common.app_status_store import video_engine_obsidian_contract_summary
+            return self._json(video_engine_obsidian_contract_summary())
+        if path=="/api/system/apps/video-engine-graph-contract":
+            from common.app_status_store import video_engine_graph_contract_summary
+            return self._json(video_engine_graph_contract_summary())
+        if path=="/api/system/apps/video-engine-workspace-contract":
+            from common.app_status_store import video_engine_workspace_contract_summary
+            return self._json(video_engine_workspace_contract_summary())
+        if path=="/api/system/apps/video-engine-context-contract":
+            from common.app_status_store import video_engine_context_contract_summary
+            return self._json(video_engine_context_contract_summary())
+        if path=="/api/system/apps/video-engine-model-contract":
+            from common.app_status_store import video_engine_model_contract_summary
+            return self._json(video_engine_model_contract_summary())
+        if path=="/api/system/apps/video-engine-cost-contract":
+            from common.app_status_store import video_engine_cost_contract_summary
+            return self._json(video_engine_cost_contract_summary())
+        if path=="/api/system/apps/video-engine-key-contract":
+            from common.app_status_store import video_engine_key_contract_summary
+            return self._json(video_engine_key_contract_summary())
+        if path=="/api/system/apps/video-engine-help-contract":
+            from common.app_status_store import video_engine_help_contract_summary
+            return self._json(video_engine_help_contract_summary())
+        if path=="/api/system/apps/video-engine-agent-training-contract":
+            from common.app_status_store import video_engine_agent_training_contract_summary
+            return self._json(video_engine_agent_training_contract_summary())
+        if path=="/api/system/apps/video-engine-project-center-contract":
+            from common.app_status_store import video_engine_project_center_contract_summary
+            return self._json(video_engine_project_center_contract_summary())
+        if path=="/api/system/apps/video-engine-uninstall-contract":
+            from common.app_status_store import video_engine_uninstall_contract_summary
+            return self._json(video_engine_uninstall_contract_summary())
+        if path=="/api/system/apps/video-engine-explorer-contract":
+            from common.app_status_store import video_engine_explorer_contract_summary
+            return self._json(video_engine_explorer_contract_summary())
+        if path=="/api/system/apps/video-engine-source-custody-contract":
+            from common.app_status_store import video_engine_source_custody_contract_summary
+            return self._json(video_engine_source_custody_contract_summary())
+        if path=="/api/system/apps/video-engine-source-hydration-contract":
+            from common.app_status_store import video_engine_source_hydration_contract_summary
+            return self._json(video_engine_source_hydration_contract_summary())
+        if path=="/api/system/apps/video-engine-source-import-contract":
+            from common.app_status_store import video_engine_source_import_contract_summary
+            return self._json(video_engine_source_import_contract_summary())
+        if path=="/api/system/apps/video-engine-source-snapshot-contract":
+            from common.app_status_store import video_engine_source_snapshot_contract_summary
+            return self._json(video_engine_source_snapshot_contract_summary())
+        if path=="/api/system/apps/video-engine-source-sha-contract":
+            from common.app_status_store import video_engine_source_sha_contract_summary
+            return self._json(video_engine_source_sha_contract_summary())
+        if path=="/api/system/apps/video-engine-source-drive-contract":
+            from common.app_status_store import video_engine_source_drive_contract_summary
+            return self._json(video_engine_source_drive_contract_summary())
+        if path=="/api/system/apps/video-engine-source-git-contract":
+            from common.app_status_store import video_engine_source_git_contract_summary
+            return self._json(video_engine_source_git_contract_summary())
+        if path=="/api/system/apps/video-engine-source-pr-contract":
+            from common.app_status_store import video_engine_source_pr_contract_summary
+            return self._json(video_engine_source_pr_contract_summary())
+        if path=="/api/system/apps/video-engine-source-ci-contract":
+            from common.app_status_store import video_engine_source_ci_contract_summary
+            return self._json(video_engine_source_ci_contract_summary())
+        if path=="/api/system/apps/video-engine-source-release-contract":
+            from common.app_status_store import video_engine_source_release_contract_summary
+            return self._json(video_engine_source_release_contract_summary())
+        if path=="/api/system/apps/video-engine-source-final-contract":
+            from common.app_status_store import video_engine_source_final_contract_summary
+            return self._json(video_engine_source_final_contract_summary())
+        if path=="/api/system/apps/video-engine-source-mac-contract":
+            from common.app_status_store import video_engine_source_mac_contract_summary
+            return self._json(video_engine_source_mac_contract_summary())
+        if path=="/api/system/apps/video-engine-source-uat-contract":
+            from common.app_status_store import video_engine_source_uat_contract_summary
+            return self._json(video_engine_source_uat_contract_summary())
+        if path=="/api/system/apps/video-engine-source-signoff-contract":
+            from common.app_status_store import video_engine_source_signoff_contract_summary
+            return self._json(video_engine_source_signoff_contract_summary())
+        if path=="/":return self._file(UI/"hub.html")
+        static={"/apps":UI/"apps.html","/runtime":UI/"runtime.html","/ai":UI/"ai.html","/workflow":UI/"workflow.html","/health":UI/"health.html","/versions":UI/"versions.html","/product-audit":UI/"product_audit.html","/workspaces":UI/"workspaces.html","/projects":UI/"projects.html","/runs":UI/"runs.html","/knowledge":UI/"knowledge.html","/decision-center":UI/"decision_center.html","/app-factory":UI/"app_factory.html","/notifications":UI/"notifications.html","/schedules":UI/"schedules.html","/analytics":UI/"analytics.html","/profiles":UI/"profiles.html","/operations":UI/"operations.html","/admin":UI/"admin.html","/settings":UI/"settings.html","/assets/style.css":UI/"assets/style.css","/assets/r27.css":UI/"assets/r27.css"}
+        if path in static:return self._file(static[path])
+        if path.startswith("/app/"):
+            app_id=path[len("/app/"):]; app=app_by_id(app_id)
+            if app and not app.get("special_service"):return self._file(Path(app["_dir"])/"ui/index.html")
+            return self._json({"error":"No disponible"},404)
+        return self._json({"error":"No encontrado"},404)
+
+    def do_POST(self):
+        path=urlparse(self.path).path
+        if path.startswith("/api/launch/"):
+            app_id=path.split("/api/launch/",1)[1]
+            app=app_by_id(app_id)
+            if not app:return self._json({"error":"App no encontrada"},404)
+            try:
+                payload=self._body()
+                return self._json({"url":launch_service(app,payload)})
+            except Exception as e:return self._json({"error":str(e)},500)
+        if path=="/api/runtime/repair":
+            try:return self._json(start_runtime_repair((self._body() or {}).get("scope","essential")))
+            except Exception as e:return self._json({"error":str(e)},500)
+        data=self._body()
+        try:
+            if path=="/api/open-projects-root":
+                from common import project_center as pc
+                target=pc._root()
+                if sys.platform=="darwin": rc=subprocess.run(["open",str(target)],check=False).returncode
+                else: rc=1
+                return self._json({"status":"ok" if rc==0 else "unsupported","path":str(target)})
+            if path=="/api/whisper/job/start":
+                from runtime.whisper_jobs import start as whisper_job_start
+                return self._json(whisper_job_start(str(data.get("action") or "prepare"),str(data.get("model") or os.environ.get("BINARIO_WHISPER_MODEL","small"))))
+            if path=="/api/workspaces/create":
+                from common.workspace_store import create_workspace
+                return self._json(create_workspace(str(data.get("name") or "Workspace"),str(data.get("description") or "")))
+            if path.startswith("/api/workspaces/") and path.endswith("/sync"):
+                from common.workspace_sync import sync_from_share
+                wid=path.split("/")[3]
+                return self._json(sync_from_share(wid,dict(data or {})))
+            if path.startswith("/api/workspaces/") and path.endswith("/import"):
+                from common.workspace_bundle import import_workspace_bundle
+                wid=path.split("/")[3]
+                return self._json(import_workspace_bundle(wid,dict(data or {})))
+            if path=="/api/projects/create":
+                from common.project_center import create
+                return self._json(create(str(data.get("name") or "Proyecto"),str(data.get("app_id") or ""),metadata=data.get("metadata") or {}))
+            if path=="/api/projects/repair":
+                from common.project_center import repair_existing_projects
+                return self._json(repair_existing_projects())
+            if path.startswith("/api/projects/") and path.endswith("/archive"):
+                from common.project_center import archive
+                return self._json(archive(path.split("/")[3]))
+            if path=="/api/runs/create":
+                from common.run_store import create_run
+                return self._json(create_run(str(data.get("workspace_id") or ""),str(data.get("app_id") or ""),input_payload=data.get("input") or {},project_id=data.get("project_id"),context=data.get("context") or {}))
+            if path=="/api/knowledge/upsert":
+                from common.knowledge_store import upsert_item
+                return self._json(upsert_item(str(data.get("workspace_id") or ""),data))
+            if path.startswith("/api/knowledge/") and path.endswith("/approve"):
+                from common.knowledge_store import approve_item
+                return self._json(approve_item(path.split("/")[3],str(data.get("reason") or "")))
+            if path.startswith("/api/knowledge/") and path.endswith("/reject"):
+                from common.knowledge_store import reject_item
+                return self._json(reject_item(path.split("/")[3],str(data.get("reason") or "")))
+            if path=="/api/workflow/instances/create":
+                from common.workflow_orchestrator import create_instance
+                return self._json(create_instance(str(data.get("workspace_id") or ""),str(data.get("definition_id") or ""),context=data.get("context") or {}))
+            if path.startswith("/api/workflow/instances/") and path.endswith("/act"):
+                from common.workflow_orchestrator import act_on_instance
+                iid=path.split("/")[4]
+                return self._json(act_on_instance(iid,str(data.get("action") or ""),data))
+            if path=="/api/app-factory/import":
+                from common.app_factory_governance import import_existing_app
+                return self._json(import_existing_app(str(data.get("project_id") or ""),str(data.get("name") or "Imported App"),str(data.get("source_path") or ""),template_id=str(data.get("template_id") or "template-v1")))
+            if path=="/api/app-factory/create":
+                from common.app_factory_governance import create_governed_project
+                return self._json(create_governed_project(str(data.get("name") or "Nueva App"),str(data.get("template_id") or "template-v1")))
+            if path.startswith("/api/app-factory/projects/") and path.endswith("/baseline"):
+                from common.app_factory_governance import capture_baseline
+                return self._json(capture_baseline(path.split("/")[4],str(data.get("label") or "manual"),str(data.get("reason") or "")))
+            if path.startswith("/api/app-factory/projects/") and path.endswith("/rollback"):
+                from common.app_factory_governance import rollback
+                return self._json(rollback(path.split("/")[4],str(data.get("baseline_id") or "")))
+            if path.startswith("/api/app-factory/projects/") and path.endswith("/release"):
+                from common.app_factory_governance import create_release_candidate
+                return self._json(create_release_candidate(path.split("/")[4],str(data.get("label") or "RC"),str(data.get("version") or "0.1.0")))
+            if path.startswith("/api/app-factory/projects/") and path.endswith("/accept-drift"):
+                from common.app_factory_governance import accept_definition_drift
+                return self._json(accept_definition_drift(path.split("/")[4],str(data.get("reason") or "")))
+            if path=="/api/system/notifications/mark-read":
+                from common.notifications_store import mark_read
+                return self._json(mark_read(str(data.get("notification_id") or "")))
+            if path=="/api/system/notifications/mark-all-read":
+                from common.notifications_store import mark_all_read
+                return self._json(mark_all_read())
+            if path=="/api/system/schedules/create":
+                from common.scheduler_store import create_schedule
+                return self._json(create_schedule(str(data.get("name") or "Programación"),str(data.get("kind") or "app-run"),data.get("schedule") or {},workspace_id=data.get("workspace_id"),app_id=data.get("app_id"),payload=data.get("payload") or {}))
+            if path.startswith("/api/system/schedules/") and path.endswith("/toggle"):
+                from common.scheduler_store import toggle_schedule
+                return self._json(toggle_schedule(path.split("/")[4],bool(data.get("enabled",True))))
+            if path=="/api/system/profiles/create":
+                from common.profile_store import create_profile
+                return self._json(create_profile(str(data.get("name") or "Perfil"),description=str(data.get("description") or ""),ai_profile=str(data.get("ai_profile") or "balanced"),apps=data.get("apps") or [],workspace_defaults=data.get("workspace_defaults") or {},preferences=data.get("preferences") or {},is_default=bool(data.get("is_default",False))))
+            if path.startswith("/api/system/profiles/") and path.endswith("/activate"):
+                from common.profile_store import set_active_profile
+                return self._json(set_active_profile(path.split("/")[4]))
+            if path=="/api/system/routing/rules":
+                from common.routing_store import save_rule
+                return self._json(save_rule(dict(data or {})))
+            if path.startswith("/api/system/routing/rules/") and path.endswith("/delete"):
+                from common.routing_store import delete_rule
+                return self._json(delete_rule(path.split("/")[5]))
+            if path=="/api/system/backup/create":
+                from common.backup_store import create_backup
+                return self._json(create_backup(str(data.get("label") or "manual")))
+            if path=="/api/system/backup/restore-plan":
+                from common.backup_store import restore_plan
+                return self._json(restore_plan(str(data.get("backup_id") or "")))
+            if path=="/api/system/local-models/save":
+                from common.local_model_store import save_local_model
+                return self._json(save_local_model(dict(data or {})))
+            if path.startswith("/api/system/local-models/") and path.endswith("/remove"):
+                from common.local_model_store import remove_local_model
+                return self._json(remove_local_model(path.split("/")[5]))
+            if path=="/api/system/audit/export":
+                from common.audit_log import export_events
+                return self._json(export_events(workspace_id=data.get("workspace_id")))
+            if path=="/api/system/plugin-catalog/save":
+                from common.plugin_catalog import save_plugin
+                return self._json(save_plugin(dict(data or {})))
+            if path.startswith("/api/system/plugin-catalog/") and path.endswith("/toggle"):
+                from common.plugin_catalog import toggle_plugin
+                return self._json(toggle_plugin(path.split("/")[5],bool(data.get("enabled",True))))
+            if path=="/api/system/policies/save":
+                from common.policy_store import save_policy
+                return self._json(save_policy(dict(data or {})))
+            if path=="/api/system/privacy/save":
+                from common.privacy_store import save_privacy_settings
+                return self._json(save_privacy_settings(dict(data or {})))
+            if path=="/api/system/costs/rates":
+                from common.cost_tracker import save_rates
+                return self._json(save_rates(dict(data or {})))
+            if path=="/api/system/tasks/create":
+                from common.task_store import create_task
+                return self._json(create_task(str(data.get("title") or "Tarea"),workspace_id=data.get("workspace_id"),app_id=data.get("app_id"),due_at=data.get("due_at"),priority=str(data.get("priority") or "normal"),payload=data.get("payload") or {}))
+            if path.startswith("/api/system/tasks/") and path.endswith("/status"):
+                from common.task_store import update_task_status
+                return self._json(update_task_status(path.split("/")[4],str(data.get("status") or "open")))
+            if path=="/api/system/release-candidates/create":
+                from common.release_candidate_store import create_release_candidate
+                return self._json(create_release_candidate(str(data.get("name") or "Release Candidate"),str(data.get("version") or "0.0.0"),data.get("artifacts") or [],data.get("gates") or {}))
+            if path.startswith("/api/system/release-candidates/") and path.endswith("/verify"):
+                from common.release_candidate_store import verify_release_candidate
+                return self._json(verify_release_candidate(path.split("/")[4]))
+            if path=="/api/system/maintenance/run":
+                from common.maintenance_store import run_maintenance
+                return self._json(run_maintenance(str(data.get("scope") or "safe")))
+            if path=="/api/system/migrations/run":
+                from common.migration_store import run_migrations
+                return self._json(run_migrations())
+            if path=="/api/system/certification/run":
+                from common.certification_store import run_certification
+                return self._json(run_certification())
+            if path=="/api/system/configuration/save":
+                from common.configuration_store import save_configuration
+                return self._json(save_configuration(dict(data or {})))
+            if path=="/api/system/alerts/ack":
+                from common.alert_store import acknowledge_alert
+                return self._json(acknowledge_alert(str(data.get("alert_id") or "")))
+            if path=="/api/system/reconciliation/run":
+                from common.reconciliation_store import run_reconciliation
+                return self._json(run_reconciliation())
+            if path=="/api/system/context/refresh":
+                from common.context_store import refresh_context
+                return self._json(refresh_context(str(data.get("workspace_id") or "")))
+            if path=="/api/system/context/export":
+                from common.context_store import export_context
+                return self._json(export_context(str(data.get("workspace_id") or "")))
+            if path=="/api/system/models/save":
+                from common.model_registry import save_model_registry
+                return self._json(save_model_registry(dict(data or {})))
+            if path=="/api/system/models/keys":
+                from common.model_registry import save_model_key
+                return self._json(save_model_key(str(data.get("provider") or ""),str(data.get("key") or "")))
+            if path=="/api/system/projects/search":
+                from common.project_index import project_search
+                return self._json(project_search(str(data.get("q") or ""),data.get("project_id")))
+            if path=="/api/system/agent-training/import":
+                from common.agent_training_registry import import_training
+                return self._json(import_training(dict(data or {})))
+            if path=="/api/system/agent-training/approve":
+                from common.agent_training_registry import approve_training
+                return self._json(approve_training(str(data.get("training_id") or ""),bool(data.get("enabled",True))))
+            return self._json({"error":"No encontrado"},404)
+        except Exception as exc:
+            return self._json({"error":f"{type(exc).__name__}: {exc}"},500)
+
+HUB_PORT=8780
+
+def main():
+    global HUB_PORT
+    ap=__import__('argparse').ArgumentParser(); ap.add_argument('--host',default='127.0.0.1'); ap.add_argument('--port',type=int,default=8780); args=ap.parse_args()
+    HUB_PORT=args.port
+    if args.host not in {'127.0.0.1','localhost','::1'}: raise SystemExit('Hub must bind to loopback only')
+    srv=ThreadingHTTPServer((args.host,args.port),Handler)
+    print(json.dumps({"status":"ready","url":f"http://{args.host}:{args.port}/","root":str(ROOT)}),flush=True)
+    try:srv.serve_forever()
+    except KeyboardInterrupt:pass
+    finally:srv.server_close()
+
+if __name__=='__main__':main()
