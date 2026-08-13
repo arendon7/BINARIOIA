@@ -3,7 +3,6 @@ name: R27 export exact source
 on:
   push:
     branches: ['chore/r27-uat-build']
-    paths: ['.github/workflows/r27-export-source.yml']
   workflow_dispatch:
 
 permissions:
