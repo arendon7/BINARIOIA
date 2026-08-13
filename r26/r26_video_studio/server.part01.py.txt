@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+ROOT = Path(__file__).resolve().parent
+PACKAGE_ROOT = ROOT.parent
+if str(PACKAGE_ROOT) not in sys.path:
+    sys.path.insert(0, str(PACKAGE_ROOT))
+
+from r26_core.project_center import canonical_projects_root, create_project, find_project, open_in_file_manager, project_target, save_project_payload
+from r26_core.preferences import load_preferences, update_preferences
+from .runtime_health import runtime_health
+from .media_analysis import detect_scenes, detect_silences, generate_waveform, media_tools, probe_media
+from .transcript import parse_srt, parse_vtt, normalize_segments
+from .social_clipper import generate_candidates
+from .transcription_adapter import transcription_status, transcribe
+from .audio_pipeline import analyze_loudness
+from .proxy_manager import cache_file, generate_proxy, generate_thumbnail
+from .engine_bridge import bridge_status, run_external_r25
+from .acceleration import acceleration_status
+from .native_renderer import render_native
+from .render_jobs import RenderJobManager
+from .project_model import VideoProject
+from .render_plan import build_render_plan
+from .timeline_ops import apply_ripple, move_item
+from .export_presets import apply_export_preset, list_export_presets
+
+CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".js": "application/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".aac": "audio/aac", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+MAX_BODY = 8 * 1024 * 1024
+MAX_ASSET_BODY = 20 * 1024 * 1024 * 1024
+
+
+def _safe_asset_name(name: str) -> str:
+    name = Path(name or "asset.bin").name
+    if not name or len(name) > 180 or name in {".", ".."}:
+        raise ValueError("invalid asset filename")
+    return name
+
+def _unique_path(folder: Path, name: str) -> Path:
+    target = folder / name
+    if not target.exists():
+        return target
+    stem, suffix = target.stem, target.suffix
+    for i in range(2, 10000):
+        candidate = folder / f"{stem}-{i}{suffix}"
+        if not candidate.exists():
+            return candidate
+    raise ValueError("unable to allocate asset filename")
+
+
+def _project_asset(projects_root: Path, project_id: str, filename: str) -> Path:
+    folder = project_target(projects_root, project_id, "assets").resolve()
+    target = (folder / _safe_asset_name(filename)).resolve()
+    if folder not in target.parents or not target.is_file():
+        raise ValueError("project asset not found")
+    return target
+
+
+def _media_type(path: Path) -> str:
+    return CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
+
+
+def handler_factory(projects_root: Path):
+    projects_root.mkdir(parents=True, exist_ok=True)
+    render_jobs = RenderJobManager(workers=1)
+
+    class Handler(BaseHTTPRequestHandler):
+        server_version = "BinarioVideoStudioR26/1.4"
+
+        def _headers(self, status: int, content_type: str, length: int):
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(length))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self'")
+            self.end_headers()
+
+        def _json(self, status: int, payload: dict):
+            raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self._headers(status, "application/json; charset=utf-8", len(raw))
+            self.wfile.write(raw)
+
+        def _file(self, path: Path):
+            if not path.is_file() or ROOT not in path.resolve().parents:
+                return self._json(404, {"error": "not_found"})
+            raw = path.read_bytes()
+            self._headers(200, CONTENT_TYPES.get(path.suffix, "application/octet-stream"), len(raw))
+            self.wfile.write(raw)
+
+        def _stream_file(self, path: Path):
+            path = path.resolve()
+            if not path.is_file():
+                return self._json(404, {"error": "not_found"})
+            size = path.stat().st_size
+            range_header = self.headers.get("Range")
+            start, end = 0, size - 1
+            status = 200
+            if range_header and range_header.startswith("bytes="):
