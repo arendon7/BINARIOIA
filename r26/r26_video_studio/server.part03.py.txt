@@ -1,0 +1,106 @@
+                                raise ValueError("incomplete asset upload")
+                            fh.write(chunk)
+                            remaining -= len(chunk)
+                    return self._json(201, {"ok": True, "path": str(target), "size": length, "name": target.name})
+                body = self._body()
+                if route == "/api/preferences":
+                    return self._json(200, update_preferences(body))
+                if route == "/api/project/load":
+                    requested_project_id = str(body.get("project_id", "")).strip()
+                    if not requested_project_id:
+                        raise ValueError("project_id required")
+                    project = find_project(projects_root, requested_project_id)
+                    state_path = Path(project["folders"]["autosave"]) / "video_project.json"
+                    if state_path.is_file():
+                        payload = json.loads(state_path.read_text(encoding="utf-8"))
+                    else:
+                        payload = None
+                    if not isinstance(payload, dict):
+                        from .project_model import new_project
+                        payload = new_project(project.get("name") or "Video nuevo").to_dict()
+                        payload.setdefault("settings", {}).setdefault("storage", {})["project_id"] = requested_project_id
+                        payload["settings"]["storage"]["path"] = project.get("path")
+                    return self._json(200, {"ok": True, "requested_project_id": requested_project_id, "path": project.get("path"), "project": payload})
+                if route == "/api/project/create":
+                    project = create_project(projects_root, name=str(body.get("name", "Video nuevo")), project_type="video", app_id="05")
+                    return self._json(201, {"ok": True, "project": project})
+                if route == "/api/project/save":
+                    project_id = str(body.get("project_id", ""))
+                    find_project(projects_root, project_id)
+                    payload = body.get("payload")
+                    if not isinstance(payload, dict):
+                        raise ValueError("payload must be object")
+                    target = save_project_payload(projects_root, project_id, payload, filename="video_project.json")
+                    return self._json(200, {"ok": True, "path": str(target)})
+                if route == "/api/media/analyze":
+                    project_id = str(body.get("project_id", ""))
+                    filename = str(body.get("filename", ""))
+                    target = _project_asset(projects_root, project_id, filename)
+                    probe = probe_media(target)
+                    waveform = generate_waveform(target, int(body.get("points", 220))) if body.get("waveform", True) else {"ok": False, "peaks": [], "reason": "disabled"}
+                    return self._json(200, {"ok": True, "probe": probe, "waveform": waveform})
+                if route == "/api/media/thumbnail":
+                    project_id = str(body.get("project_id", "")); filename = str(body.get("filename", ""))
+                    target = _project_asset(projects_root, project_id, filename); project = find_project(projects_root, project_id)
+                    return self._json(200, generate_thumbnail(target, project, at=body.get("at")))
+                if route == "/api/media/proxy":
+                    project_id = str(body.get("project_id", "")); filename = str(body.get("filename", ""))
+                    target = _project_asset(projects_root, project_id, filename); project = find_project(projects_root, project_id)
+                    return self._json(200, generate_proxy(target, project, max_width=int(body.get("max_width", 960))))
+                if route == "/api/media/loudness":
+                    project_id = str(body.get("project_id", "")); filename = str(body.get("filename", ""))
+                    target = _project_asset(projects_root, project_id, filename)
+                    return self._json(200, analyze_loudness(target))
+                if route == "/api/media/silences":
+                    project_id = str(body.get("project_id", "")); filename = str(body.get("filename", ""))
+                    target = _project_asset(projects_root, project_id, filename)
+                    return self._json(200, detect_silences(target, noise_db=float(body.get("noise_db", -35)), min_duration=float(body.get("min_duration", .45)), padding=float(body.get("padding", .12))))
+                if route == "/api/media/scenes":
+                    project_id = str(body.get("project_id", "")); filename = str(body.get("filename", ""))
+                    target = _project_asset(projects_root, project_id, filename); project = find_project(projects_root, project_id)
+                    report = detect_scenes(target, threshold=float(body.get("threshold", 0.30)), min_gap=float(body.get("min_gap", 0.75)), max_scenes=int(body.get("max_scenes", 48)))
+                    scenes = []
+                    for row in report.get("scenes", [])[:48]:
+                        thumb = generate_thumbnail(target, project, at=float(row.get("time", 0)))
+                        scenes.append({**row, "thumbnail": thumb.get("cache_name") if thumb.get("ok") else None})
+                    report["scenes"] = scenes
+                    return self._json(200, report)
+                if route == "/api/render/start":
+                    project_id = str(body.get("project_id", "")); disk_project = find_project(projects_root, project_id)
+                    payload = body.get("project")
+                    if not isinstance(payload, dict): raise ValueError("project must be object")
+                    video_project = VideoProject.from_dict(payload)
+                    sequence_id = str(body.get("sequence_id") or video_project.active_sequence_id)
+                    sequence = video_project.sequence(sequence_id)
+                    output_name = _safe_asset_name(str(body.get("output_name") or f"{video_project.name}-{sequence.name}.mp4"))
+                    if not output_name.lower().endswith(".mp4"): output_name += ".mp4"
+                    output = _unique_path(Path(disk_project["folders"]["exports"]), output_name)
+                    plan_path = Path(disk_project["folders"]["autosave"]) / f"render-plan-{sequence_id}.json"
+                    plan_path.write_text(json.dumps({"project": video_project.to_dict(), "render_plan": build_render_plan(video_project, sequence_id).to_dict()}, ensure_ascii=False, indent=2), encoding="utf-8")
+                    def run(progress):
+                        bridge = bridge_status()
+                        if bridge.get("r25_render_command"):
+                            return run_external_r25(plan_path, output, progress=progress)
+                        return render_native(video_project, sequence_id, Path(disk_project["folders"]["assets"]), output, progress=progress)
+                    job = render_jobs.start(run, label=f"{video_project.name} · {sequence.name}")
+                    return self._json(202, {"ok": True, "job": job, "output": str(output), "engine": bridge_status()})
+                if route == "/api/render/batch":
+                    project_id = str(body.get("project_id", "")); disk_project = find_project(projects_root, project_id)
+                    payload = body.get("project")
+                    if not isinstance(payload, dict): raise ValueError("project must be object")
+                    video_project = VideoProject.from_dict(payload)
+                    requested = body.get("sequence_ids")
+                    if requested is None:
+                        sequence_ids = [s.id for s in video_project.sequences if s.kind == "clip"]
+                    elif isinstance(requested, list):
+                        sequence_ids = [str(x) for x in requested]
+                    else:
+                        raise ValueError("sequence_ids must be list")
+                    if not sequence_ids:
+                        raise ValueError("no sequences selected")
+                    if len(sequence_ids) > 30:
+                        raise ValueError("batch render limited to 30 sequences")
+                    jobs = []
+                    for sequence_id in sequence_ids:
+                        sequence = video_project.sequence(sequence_id)
+                        safe_project = _safe_asset_name(video_project.name.replace("/", "-") or "video")
