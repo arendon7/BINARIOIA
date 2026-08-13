@@ -2,7 +2,7 @@ name: One-shot certified R26 source hydration
 
 on:
   push:
-    branches: ['chore/r27-import-full-source']
+    branches: ['fix/r27-post-merge-regression']
     paths: ['.github/workflows/hydrate-certified-source-once.yml']
 
 permissions:
@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: chore/r27-import-full-source
+          ref: fix/r27-post-merge-regression
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -37,5 +37,5 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'chore(source): hydrate remaining certified R26 source paths'
-          git push origin HEAD:chore/r27-import-full-source
+          git commit -m 'chore(source): reconcile missing certified R26 paths'
+          git push origin HEAD:fix/r27-post-merge-regression
