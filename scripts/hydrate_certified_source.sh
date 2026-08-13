@@ -2,7 +2,8 @@
 set -euo pipefail
 
 EXPECTED_SHA="b854a8316ecc1003ea9f2806ceb9dea229c9f276f881b942dad3dc2c46e30f87"
-SNAPSHOT_URL="${BINARIO_SOURCE_SNAPSHOT_URL:-https://drive.google.com/uc?export=download&id=1ufivwWBMohoPzaNj_8maCWWe8MTEQxrt}"
+SNAPSHOT_ID="1ufivwWBMohoPzaNj_8maCWWe8MTEQxrt"
+SNAPSHOT_URL="${BINARIO_SOURCE_SNAPSHOT_URL:-https://drive.google.com/uc?export=download&id=${SNAPSHOT_ID}}"
 REPO_ROOT="${1:-$(pwd)}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/binario-source-hydrate.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
@@ -27,8 +28,15 @@ PY
 
 ARCHIVE="$WORK/R26_SOURCE_TEXT.tar.gz"
 echo "Downloading certified source custody snapshot…"
-curl -fL --retry 4 --retry-delay 2 --connect-timeout 20 "$SNAPSHOT_URL" -o "$ARCHIVE"
-ACTUAL_SHA="$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')"
+curl -fL --retry 2 --retry-delay 1 --connect-timeout 20 "$SNAPSHOT_URL" -o "$ARCHIVE" || true
+ACTUAL_SHA="$(shasum -a 256 "$ARCHIVE" 2>/dev/null | awk '{print $1}')"
+if [[ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]]; then
+  echo "Direct Drive download did not yield the certified bytes; using gdown fallback."
+  rm -f "$ARCHIVE"
+  python3 -m pip install --disable-pip-version-check -q gdown
+  gdown "$SNAPSHOT_ID" -O "$ARCHIVE"
+  ACTUAL_SHA="$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')"
+fi
 if [[ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]]; then
   echo "SHA mismatch: expected $EXPECTED_SHA got $ACTUAL_SHA" >&2
   exit 3
