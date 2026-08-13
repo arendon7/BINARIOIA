@@ -12,6 +12,7 @@ OLD_APP='INSTALAR BINARIO IA R26 FULL.app'; NEW_APP='INSTALAR BINARIO IA R27 UAT
 CMD='INSTALAR_BINARIO_IA_R27_FULL_MAC_UAT.command'
 OVERLAY_DIRS=('apps','common','hub','r26','runtime','config','scripts','tests','docs')
 ROOT_OVERLAY_FILES=('ABRIR_KNOWLEDGE_OBSIDIAN.command','EMPIEZA_AQUI.md','README.md')
+CHECKSUM_PREFIXES=('apps','common','hub','runtime','workflow','config','scripts')
 
 def sha(path:Path)->str:
  h=hashlib.sha256()
@@ -40,6 +41,20 @@ def overlay_checksums(repo:Path)->dict[str,str]:
   p=repo/name
   if p.is_file():out[p.relative_to(repo).as_posix()]=sha(p)
  return out
+
+def write_package_checksums(payload:Path)->int:
+ files={}
+ for name in CHECKSUM_PREFIXES:
+  base=payload/name
+  if not base.exists():continue
+  for p in sorted(base.rglob('*')):
+   if not p.is_file() or any(x in {'__pycache__','.pytest_cache','.git'} for x in p.parts) or p.name=='.DS_Store' or p.suffix=='.pyc':continue
+   rp=p.relative_to(payload).as_posix()
+   if rp=='config/certified_checksums.json':continue
+   files[rp]=sha(p)
+ target=payload/'config'/'certified_checksums.json';target.parent.mkdir(parents=True,exist_ok=True)
+ target.write_text(json.dumps({'schema':'sbia-certified-checksums-2.0','release':'0.27.0-r27-uat','files_count':len(files),'files':files},indent=2,ensure_ascii=False),encoding='utf-8')
+ return len(files)
 
 def executable(p:Path):p.chmod(p.stat().st_mode|stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
 
@@ -96,6 +111,7 @@ def main():
   (payload/'ABRIR_BINARIO_IA.command').write_text('#!/bin/zsh\nROOT="$(cd "$(dirname "$0")" && pwd)"\nexec "$ROOT/ABRIR_BINARIO_IA_R27.command" "$@"\n');executable(payload/'ABRIR_BINARIO_IA.command')
   (payload/'ABRIR_BINARIO_IA_R26.command').write_text('#!/bin/zsh\n# Alias de compatibilidad del candidato R27 UAT.\nROOT="$(cd "$(dirname "$0")" && pwd)"\nexec "$ROOT/ABRIR_BINARIO_IA_R27.command" "$@"\n');executable(payload/'ABRIR_BINARIO_IA_R26.command')
   (payload/'.release-blocked').write_text('R27 UAT: promoción a estable bloqueada únicamente hasta completar smoke físico en Mac.\nGates de código: fuente R27 + baseline R26 certificada + overlay SHA-256.\nPendiente físico: Hub, Video Studio, FFmpeg y Whisper end-to-end.\n')
+  checks=write_package_checksums(payload);build_meta['certified_payload_files']=checks
   (payload/'R27_UAT_BUILD.json').write_text(json.dumps(build_meta,indent=2,ensure_ascii=False),encoding='utf-8')
   patch_installer(root/'installer'/'install_standalone.py')
   shutil.copy2(templates/CMD,root/CMD);executable(root/CMD)
@@ -110,7 +126,7 @@ def main():
   required=[payload/'apps'/'11_documentos_ia',payload/'hub'/'server.py',payload/'runtime'/'runtime_manager.py',payload/'runtime'/'whisper_gateway.py',payload/'runtime'/'whisper_selftest.py',payload/'config'/'apps.json',payload/'scripts'/'verify_all.py',payload/'r26'/'r26_video_studio'/'video-studio.js',payload/'ABRIR_BINARIO_IA_R27.command',root/'installer'/'install_standalone.py',app/'Contents'/'MacOS'/'launch',resources/'payload'/NEW_PAYLOAD/'runtime'/'whisper_gateway.py']
   miss=[str(p.relative_to(root)) for p in required if not p.exists()]
   if miss:raise SystemExit('package incomplete: '+', '.join(miss))
-  out=dist/OUT_ZIP;zipdet(root,out);digest=sha(out);(dist/(OUT_ZIP+'.sha256.txt')).write_text(f'{digest}  {OUT_ZIP}\n');print(json.dumps({'ok':True,'artifact':str(out),'sha256':digest,'overlay_files':len(overlay)},indent=2))
+  out=dist/OUT_ZIP;zipdet(root,out);digest=sha(out);(dist/(OUT_ZIP+'.sha256.txt')).write_text(f'{digest}  {OUT_ZIP}\n');print(json.dumps({'ok':True,'artifact':str(out),'sha256':digest,'overlay_files':len(overlay),'certified_payload_files':checks},indent=2))
  return 0
 
 if __name__=='__main__':raise SystemExit(main())
