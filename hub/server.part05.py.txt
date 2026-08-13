@@ -1,0 +1,306 @@
+        if path=="/api/system/video/render":
+            from common.video_product_store import render_summary
+            return self._json(render_summary())
+        if path=="/api/system/video/audio":
+            from common.video_product_store import audio_summary
+            return self._json(audio_summary())
+        if path=="/api/system/video/scenes":
+            from common.video_product_store import scenes_summary
+            return self._json(scenes_summary())
+        if path=="/api/system/video/captions":
+            from common.video_product_store import captions_summary
+            return self._json(captions_summary())
+        if path=="/api/system/video/assets":
+            from common.video_product_store import assets_summary
+            return self._json(assets_summary())
+        if path=="/api/system/video/export":
+            from common.video_product_store import export_summary
+            return self._json(export_summary())
+        if path=="/api/system/video/uat":
+            from common.video_product_store import uat_summary
+            return self._json(uat_summary())
+        if path=="/api/system/installer":
+            from common.installer_status_store import installer_summary
+            return self._json(installer_summary())
+        if path=="/api/system/uninstall":
+            from common.installer_status_store import uninstall_summary
+            return self._json(uninstall_summary())
+        if path=="/api/system/launcher":
+            from common.launcher_status_store import launcher_summary
+            return self._json(launcher_summary())
+        if path=="/api/system/source":
+            from common.source_provenance import source_summary
+            return self._json(source_summary())
+        if path=="/api/system/source/baseline":
+            from common.source_provenance import baseline_summary
+            return self._json(baseline_summary())
+        if path=="/api/system/source/import":
+            from common.source_provenance import import_summary
+            return self._json(import_summary())
+        if path=="/api/system/source/release-gate":
+            from common.source_provenance import release_gate_summary
+            return self._json(release_gate_summary())
+        if path=="/api/system/source/ledger":
+            from common.source_provenance import ledger_summary
+            return self._json(ledger_summary())
+        if path=="/api/system/hub":
+            from common.hub_status_store import hub_summary
+            return self._json(hub_summary())
+        if path=="/api/system/apps":
+            from common.app_status_store import apps_summary
+            return self._json(apps_summary())
+        if path=="/api/system/apps/storage":
+            from common.app_status_store import storage_summary
+            return self._json(storage_summary())
+        if path=="/api/system/apps/training":
+            from common.app_status_store import training_summary
+            return self._json(training_summary())
+        if path=="/api/system/apps/models":
+            from common.app_status_store import models_summary
+            return self._json(models_summary())
+        if path=="/api/system/apps/ux":
+            from common.app_status_store import ux_summary
+            return self._json(ux_summary())
+        if path=="/api/system/apps/runtime":
+            from common.app_status_store import runtime_summary
+            return self._json(runtime_summary())
+        if path=="/api/system/apps/releases":
+            from common.app_status_store import release_summary
+            return self._json(release_summary())
+        if path=="/api/system/apps/debt":
+            from common.app_status_store import debt_summary
+            return self._json(debt_summary())
+        if path=="/api/system/apps/reconciliation":
+            from common.app_status_store import reconciliation_summary
+            return self._json(reconciliation_summary())
+        if path=="/api/system/apps/verification":
+            from common.app_status_store import verification_summary
+            return self._json(verification_summary())
+        if path=="/api/system/apps/historical":
+            from common.app_status_store import historical_summary
+            return self._json(historical_summary())
+        if path=="/api/system/apps/knowledge":
+            from common.app_status_store import knowledge_summary
+            return self._json(knowledge_summary())
+        if path=="/api/system/apps/certification":
+            from common.app_status_store import certification_summary
+            return self._json(certification_summary())
+        if path=="/api/system/apps/gates":
+            from common.app_status_store import gates_summary
+            return self._json(gates_summary())
+        if path=="/api/system/apps/ledger":
+            from common.app_status_store import ledger_summary
+            return self._json(ledger_summary())
+        if path=="/api/system/apps/source":
+            from common.app_status_store import source_summary
+            return self._json(source_summary())
+        if path=="/api/system/apps/projects":
+            from common.app_status_store import projects_summary
+            return self._json(projects_summary())
+        if path=="/api/system/apps/project-files":
+            from common.app_status_store import project_files_summary
+            return self._json(project_files_summary())
+        if path=="/api/system/apps/project-search":
+            from common.app_status_store import project_search_summary
+            return self._json(project_search_summary())
+        if path=="/api/system/apps/whisper":
+            from common.app_status_store import whisper_summary
+            return self._json(whisper_summary())
+        if path=="/api/system/apps/video":
+            from common.app_status_store import video_summary
+            return self._json(video_summary())
+        if path=="/api/system/apps/agent":
+            from common.app_status_store import agent_summary
+            return self._json(agent_summary())
+        if path=="/api/system/apps/documents":
+            from common.app_status_store import documents_summary
+            return self._json(documents_summary())
+        if path=="/api/system/apps/research":
+            from common.app_status_store import research_summary
+            return self._json(research_summary())
+        if path=="/api/system/apps/brand":
+            from common.app_status_store import brand_summary
+            return self._json(brand_summary())
+        if path=="/api/system/apps/youtube":
+            from common.app_status_store import youtube_summary
+            return self._json(youtube_summary())
+        if path=="/api/system/apps/kit":
+            from common.app_status_store import kit_summary
+            return self._json(kit_summary())
+        if path=="/api/system/apps/app-factory":
+            from common.app_status_store import app_factory_summary
+            return self._json(app_factory_summary())
+        if path=="/api/system/apps/audit":
+            from common.app_status_store import audit_summary
+            return self._json(audit_summary())
+        if path=="/api/system/apps/web":
+            from common.app_status_store import web_summary
+            return self._json(web_summary())
+        if path=="/api/system/apps/commerce":
+            from common.app_status_store import commerce_summary
+            return self._json(commerce_summary())
+        if path=="/api/system/apps/proposals":
+            from common.app_status_store import proposals_summary
+            return self._json(proposals_summary())
+        if path=="/api/system/apps/release":
+            from common.app_status_store import app_release_summary
+            return self._json(app_release_summary())
+        if path=="/api/system/apps/installer":
+            from common.app_status_store import installer_summary
+            return self._json(installer_summary())
+        if path=="/api/system/apps/mac":
+            from common.app_status_store import mac_summary
+            return self._json(mac_summary())
+        if path=="/api/system/apps/uat":
+            from common.app_status_store import uat_summary
+            return self._json(uat_summary())
+        if path=="/api/system/apps/gatekeeper":
+            from common.app_status_store import gatekeeper_summary
+            return self._json(gatekeeper_summary())
+        if path=="/api/system/apps/app-translocation":
+            from common.app_status_store import app_translocation_summary
+            return self._json(app_translocation_summary())
+        if path=="/api/system/apps/apple-silicon":
+            from common.app_status_store import apple_silicon_summary
+            return self._json(apple_silicon_summary())
+        if path=="/api/system/apps/ffmpeg":
+            from common.app_status_store import ffmpeg_summary
+            return self._json(ffmpeg_summary())
+        if path=="/api/system/apps/keychain":
+            from common.app_status_store import keychain_summary
+            return self._json(keychain_summary())
+        if path=="/api/system/apps/models-real":
+            from common.app_status_store import real_models_summary
+            return self._json(real_models_summary())
+        if path=="/api/system/apps/project-storage":
+            from common.app_status_store import project_storage_summary
+            return self._json(project_storage_summary())
+        if path=="/api/system/apps/project-migration":
+            from common.app_status_store import project_migration_summary
+            return self._json(project_migration_summary())
+        if path=="/api/system/apps/source-hydration":
+            from common.app_status_store import source_hydration_summary
+            return self._json(source_hydration_summary())
+        if path=="/api/system/apps/repo":
+            from common.app_status_store import repo_summary
+            return self._json(repo_summary())
+        if path=="/api/system/apps/repo-ci":
+            from common.app_status_store import repo_ci_summary
+            return self._json(repo_ci_summary())
+        if path=="/api/system/apps/repo-release":
+            from common.app_status_store import repo_release_summary
+            return self._json(repo_release_summary())
+        if path=="/api/system/apps/doctor":
+            from common.app_status_store import doctor_summary
+            return self._json(doctor_summary())
+        if path=="/api/system/apps/whisper-doctor":
+            from common.app_status_store import whisper_doctor_summary
+            return self._json(whisper_doctor_summary())
+        if path=="/api/system/apps/video-shell":
+            from common.app_status_store import video_shell_summary
+            return self._json(video_shell_summary())
+        if path=="/api/system/apps/hub-shell":
+            from common.app_status_store import hub_shell_summary
+            return self._json(hub_shell_summary())
+        if path=="/api/system/apps/simple-mode":
+            from common.app_status_store import simple_mode_summary
+            return self._json(simple_mode_summary())
+        if path=="/api/system/apps/project-handoff":
+            from common.app_status_store import project_handoff_summary
+            return self._json(project_handoff_summary())
+        if path=="/api/system/apps/storage-contract":
+            from common.app_status_store import storage_contract_summary
+            return self._json(storage_contract_summary())
+        if path=="/api/system/apps/training-contract":
+            from common.app_status_store import training_contract_summary
+            return self._json(training_contract_summary())
+        if path=="/api/system/apps/models-contract":
+            from common.app_status_store import models_contract_summary
+            return self._json(models_contract_summary())
+        if path=="/api/system/apps/source-contract":
+            from common.app_status_store import source_contract_summary
+            return self._json(source_contract_summary())
+        if path=="/api/system/apps/release-contract":
+            from common.app_status_store import release_contract_summary
+            return self._json(release_contract_summary())
+        if path=="/api/system/apps/mac-contract":
+            from common.app_status_store import mac_contract_summary
+            return self._json(mac_contract_summary())
+        if path=="/api/system/apps/ux-contract":
+            from common.app_status_store import ux_contract_summary
+            return self._json(ux_contract_summary())
+        if path=="/api/system/apps/runtime-contract":
+            from common.app_status_store import runtime_contract_summary
+            return self._json(runtime_contract_summary())
+        if path=="/api/system/apps/certification-contract":
+            from common.app_status_store import certification_contract_summary
+            return self._json(certification_contract_summary())
+        if path=="/api/system/apps/ledger-contract":
+            from common.app_status_store import ledger_contract_summary
+            return self._json(ledger_contract_summary())
+        if path=="/api/system/apps/baseline-contract":
+            from common.app_status_store import baseline_contract_summary
+            return self._json(baseline_contract_summary())
+        if path=="/api/system/apps/history-contract":
+            from common.app_status_store import history_contract_summary
+            return self._json(history_contract_summary())
+        if path=="/api/system/apps/regression-contract":
+            from common.app_status_store import regression_contract_summary
+            return self._json(regression_contract_summary())
+        if path=="/api/system/apps/ci-contract":
+            from common.app_status_store import ci_contract_summary
+            return self._json(ci_contract_summary())
+        if path=="/api/system/apps/mac-uat-contract":
+            from common.app_status_store import mac_uat_contract_summary
+            return self._json(mac_uat_contract_summary())
+        if path=="/api/system/apps/release-gate-contract":
+            from common.app_status_store import release_gate_contract_summary
+            return self._json(release_gate_contract_summary())
+        if path=="/api/system/apps/source-import-contract":
+            from common.app_status_store import source_import_contract_summary
+            return self._json(source_import_contract_summary())
+        if path=="/api/system/apps/source-custody-contract":
+            from common.app_status_store import source_custody_contract_summary
+            return self._json(source_custody_contract_summary())
+        if path=="/api/system/apps/repo-policy-contract":
+            from common.app_status_store import repo_policy_contract_summary
+            return self._json(repo_policy_contract_summary())
+        if path=="/api/system/apps/development-ledger-contract":
+            from common.app_status_store import development_ledger_contract_summary
+            return self._json(development_ledger_contract_summary())
+        if path=="/api/system/apps/canonical-source-contract":
+            from common.app_status_store import canonical_source_contract_summary
+            return self._json(canonical_source_contract_summary())
+        if path=="/api/system/apps/installable-contract":
+            from common.app_status_store import installable_contract_summary
+            return self._json(installable_contract_summary())
+        if path=="/api/system/apps/no-zip-during-dev":
+            from common.app_status_store import no_zip_during_dev_summary
+            return self._json(no_zip_during_dev_summary())
+        if path=="/api/system/apps/final-release-contract":
+            from common.app_status_store import final_release_contract_summary
+            return self._json(final_release_contract_summary())
+        if path=="/api/system/apps/complete-source-contract":
+            from common.app_status_store import complete_source_contract_summary
+            return self._json(complete_source_contract_summary())
+        if path=="/api/system/apps/whisper-native-contract":
+            from common.app_status_store import whisper_native_contract_summary
+            return self._json(whisper_native_contract_summary())
+        if path=="/api/system/apps/video-deep-editor-contract":
+            from common.app_status_store import video_deep_editor_contract_summary
+            return self._json(video_deep_editor_contract_summary())
+        if path=="/api/system/apps/project-center-contract":
+            from common.app_status_store import project_center_contract_summary
+            return self._json(project_center_contract_summary())
+        if path=="/api/system/apps/agent-training-contract":
+            from common.app_status_store import agent_training_contract_summary
+            return self._json(agent_training_contract_summary())
+        if path=="/api/system/apps/model-help-contract":
+            from common.app_status_store import model_help_contract_summary
+            return self._json(model_help_contract_summary())
+        if path=="/api/system/apps/uninstaller-contract":
+            from common.app_status_store import uninstaller_contract_summary
+            return self._json(uninstaller_contract_summary())
+        if path=="/api/system/apps/explorer-contract":
+            from common.app_status_store import explorer_contract_summary
+            return self._json(explorer_contract_summary())
