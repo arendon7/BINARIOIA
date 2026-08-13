@@ -12,6 +12,11 @@
                 from common.version_center import overview
                 return self._json(overview(manifests()))
             except Exception as exc:return self._json({"error":str(exc)},500)
+        if path=="/api/product-reconciliation":
+            try:
+                from common.product_reconciliation import audit
+                return self._json(audit(ROOT))
+            except Exception as exc:return self._json({"error":str(exc)},500)
         if path=="/api/product-audit":
             try:
                 from common.product_audit import product_audit

@@ -21,7 +21,7 @@ def analyze(pr):
     pr['current_step']='content-system';store.save(pr);return pr['analysis']
 def build_calendar(pr,days=30,cadence=4):
     if not pr.get('ideas'):raise RuntimeError('Primero genera el sistema de contenido.')
-    pr['calendar"]=ci.calendar(pr['ideas'],days=int(days),cadence=int(cadence));pr['current_step']='calendar';store.save(pr);return pr['calendar']
+    pr['calendar']=ci.calendar(pr['ideas'],days=int(days),cadence=int(cadence));pr['current_step']='calendar';store.save(pr);return pr['calendar']
 def review(pr,notes=''):
     if not pr.get('analysis',{}).get('legacy'):raise RuntimeError('Primero ejecuta la auditoría.')
     pr['analysis'].update({'reviewed':True,'review_notes':str(notes or ''),'status':'reviewed'});store.snapshot(pr['id'],'reviewed');store.save(pr);return pr['analysis']

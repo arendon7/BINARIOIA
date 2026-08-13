@@ -1,0 +1,29 @@
+{
+  "schema": "sbia-r26-source-snapshot-map-1.0",
+  "snapshot_sha256": "b854a8316ecc1003ea9f2806ceb9dea229c9f276f881b942dad3dc2c46e30f87",
+  "sections": {
+    "apps": {"files": 1354, "bytes": 3548443},
+    "common": {"files": 44, "bytes": 348065},
+    "hub": {"files": 27, "bytes": 248512},
+    "runtime": {"files": 15, "bytes": 54269},
+    "r26": {"files": 79, "bytes": 451336},
+    "scripts": {"files": 5, "bytes": 28298},
+    "tests": {"files": 34, "bytes": 215344},
+    "config": {"files": 36, "bytes": 286482},
+    "docs": {"files": 12, "bytes": 14262}
+  },
+  "apps": {
+    "01_auditoria_negocio": {"files": 58, "bytes": 64802},
+    "02_cazador_webs": {"files": 58, "bytes": 66047},
+    "03_agente_ia_whatsapp": {"files": 60, "bytes": 86107},
+    "04_auditoria_youtube": {"files": 59, "bytes": 60188},
+    "05_editor_video_ia": {"files": 100, "bytes": 501482},
+    "06_auditoria_marca_personal": {"files": 59, "bytes": 58811},
+    "07_auditoria_ecommerce": {"files": 59, "bytes": 68485},
+    "08_creador_kits": {"files": 63, "bytes": 76077},
+    "09_propuestas_ia": {"files": 60, "bytes": 69254},
+    "10_investigador_ia": {"files": 63, "bytes": 68184},
+    "11_documentos_ia": {"files": 34, "bytes": 57659},
+    "12_app_factory_ia": {"files": 681, "bytes": 2371347}
+  }
+}

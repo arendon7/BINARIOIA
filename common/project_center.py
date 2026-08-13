@@ -99,7 +99,13 @@ def update(pid:str,patch:dict)->dict:
     before=dict(row)
     allowed={"name","status","current_step","metadata","artifacts","sources","notes","run_ids","handoff_ids"}
     for k,v in patch.items():
-        if k in allowed:row[k]=v
+        if k not in allowed:continue
+        if k=="metadata" and isinstance(v,dict):
+            # Studio metadata is additive. Never discard canonical physical
+            # project_path/folders/workspace linkage when an App updates its
+            # own status fields; changing those paths strands autosave state.
+            row["metadata"]={**(row.get("metadata") if isinstance(row.get("metadata"),dict) else {}),**v}
+        else:row[k]=v
     row["updated_at"]=_now();row=_sync_workspace(row);_path(pid).write_text(json.dumps(row,indent=2,ensure_ascii=False),encoding="utf-8")
     try:
         from common.workspace_event_bridge import project_event
