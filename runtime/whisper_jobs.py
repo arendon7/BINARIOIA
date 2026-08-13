@@ -5,7 +5,8 @@ import time
 import uuid
 from typing import Any
 
-from runtime.whisper_gateway import prepare, repair, self_test, status
+from runtime import whisper_selftest
+from runtime.whisper_gateway import prepare, repair, status
 
 _LOCK = threading.RLock()
 _JOBS: dict[str, dict[str, Any]] = {}
@@ -35,7 +36,8 @@ def start(action: str = "prepare", model: str = "small") -> dict[str, Any]:
             return _public(dict(_JOBS[_LATEST]))
         job_id = f"whisper-{uuid.uuid4().hex[:12]}"
         now = time.time()
-        job = {"ok": True, "job_id": job_id, "action": action, "model": model, "status": "queued", "stage": "queued", "progress": 2, "message": "Preparación de Whisper en cola", "started_at": now, "updated_at": now, "result": None, "error": None}
+        queued_message = "Auto-prueba de Whisper en cola" if action == "self-test" else "Preparación de Whisper en cola"
+        job = {"ok": True, "job_id": job_id, "action": action, "model": model, "status": "queued", "stage": "queued", "progress": 2, "message": queued_message, "started_at": now, "updated_at": now, "result": None, "error": None}
         _JOBS[job_id] = job
         _LATEST = job_id
 
@@ -53,17 +55,32 @@ def start(action: str = "prepare", model: str = "small") -> dict[str, Any]:
             if before.get("ready") and action == "prepare":
                 update(status="done", stage="ready", progress=100, message="Whisper ya estaba listo", result={"ok": True, "status": before})
                 return
-            if before.get("runtime_ok"):
-                update(stage="model", progress=35, message="Preparando modelo Whisper")
-            else:
-                update(stage="runtime", progress=20, message="Reparando runtime nativo de Whisper")
+
             if action == "self-test":
-                update(stage="self-test", progress=55, message="Generando audio de prueba y transcribiendo")
-                result = self_test(model)
+                if not before.get("ready"):
+                    update(stage="prepare", progress=30, message="Preparando Whisper antes de la auto-prueba")
+                    prepared = prepare(model)
+                    if not prepared.get("ok"):
+                        update(
+                            status="failed",
+                            stage=str(prepared.get("stage") or "prepare"),
+                            progress=100,
+                            message="Whisper no pudo quedar listo para la auto-prueba",
+                            result=prepared,
+                            error=str(prepared.get("error") or prepared),
+                        )
+                        return
+                update(stage="self-test", progress=60, message="Generando audio de prueba y transcribiendo")
+                result = whisper_selftest.run(model)
                 success_message = "Auto-prueba Whisper OK" + ((" · " + str(result.get("transcript"))) if result.get("transcript") else "")
             else:
+                if before.get("runtime_ok"):
+                    update(stage="model", progress=35, message="Preparando modelo Whisper")
+                else:
+                    update(stage="runtime", progress=20, message="Reparando runtime nativo de Whisper")
                 result = repair(model) if action == "repair" else prepare(model)
                 success_message = "Whisper listo para transcribir"
+
             if result.get("ok"):
                 update(status="done", stage="ready", progress=100, message=success_message, result=result)
             else:
