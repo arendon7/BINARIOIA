@@ -17,10 +17,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          url='https://drive.usercontent.google.com/download?id=1ufivwWBMohoPzaNj_8maCWWe8MTEQxrt&export=download&confirm=t'
-          curl -L --fail --retry 3 --retry-delay 2 "$url" -o /tmp/r26-current.zip
-          sha256sum /tmp/r26-current.zip
-          unzip -q /tmp/r26-current.zip -d /tmp/r26-current
+          url='https://drive.google.com/uc?export=download&id=1ufivwWBMohoPzaNj_8maCWWe8MTEQxrt'
+          curl -fL --retry 4 --retry-delay 2 --connect-timeout 20 "$url" -o /tmp/R26_SOURCE_TEXT.tar.gz
+          sha256sum /tmp/R26_SOURCE_TEXT.tar.gz
+          mkdir -p /tmp/r26-current
+          tar -xzf /tmp/R26_SOURCE_TEXT.tar.gz -C /tmp/r26-current
       - name: Fingerprint APP11 and derive baseline tree algorithm
         shell: bash
         run: |
@@ -83,8 +84,6 @@ jobs:
               out['json_rel_size_sha_compact'] = hashlib.sha256(json.dumps(manifests['json_rel_size_sha_compact'], sort_keys=True, separators=(',',':')).encode()).hexdigest()
               return out
 
-          # Derive the algorithm only from currently hydrated apps that still match
-          # canonical file count and byte count. Require >=2 independent matches.
           eligible = []
           for name, meta in baseline['apps'].items():
               root = repo/'apps'/name
@@ -117,7 +116,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          root="$(find /tmp/r26-current -type d -path '*/apps/11_documentos_ia' -print -quit)"
+          root="$(find /tmp/r26-current -type d -path '*/apps/11_documentos_ia' -print -quit || true)"
           if [[ -n "$root" ]]; then
             mkdir -p /tmp/app11-artifact/apps
             cp -a "$root" /tmp/app11-artifact/apps/
