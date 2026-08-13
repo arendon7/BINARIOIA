@@ -1,0 +1,13 @@
+{
+  "schema": "sbia-extension-1.0",
+  "id": "documents-ia",
+  "name": "Documentos IA",
+  "app_number": 11,
+  "version": "1.0.0-rc1",
+  "engine": "documentos_ia",
+  "entrypoint": "python -m documentos_ia.service",
+  "healthcheck": "/api/quality",
+  "runtime_profile": "documents_ia",
+  "contracts": ["sbia-flow-1.2", "sbia-interop-1.2"],
+  "capabilities": ["structured-documents","sources-provenance","block-editor","revision-history","quality-gate","docx-export","pdf-export","html-export","markdown-export","workflow-adapter"]
+}
