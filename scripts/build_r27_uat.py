@@ -11,6 +11,7 @@ OLD_PAYLOAD='Binario IA v0.25.1-a1'; NEW_PAYLOAD='Binario IA R27 UAT'
 OLD_APP='INSTALAR BINARIO IA R26 FULL.app'; NEW_APP='INSTALAR BINARIO IA R27 UAT.app'
 CMD='INSTALAR_BINARIO_IA_R27_FULL_MAC_UAT.command'
 OVERLAY_DIRS=('apps','common','hub','r26','runtime','config','scripts','tests','docs')
+ROOT_OVERLAY_FILES=('ABRIR_KNOWLEDGE_OBSIDIAN.command','EMPIEZA_AQUI.md','README.md')
 
 def sha(path:Path)->str:
  h=hashlib.sha256()
@@ -23,9 +24,22 @@ def merge(src:Path,dst:Path):
  if src.is_dir():
   dst.mkdir(parents=True,exist_ok=True)
   for p in src.iterdir():
-   if p.name not in {'.git','__pycache__','.DS_Store'}:merge(p,dst/p.name)
+   if p.name not in {'.git','__pycache__','.DS_Store','.pytest_cache'}:merge(p,dst/p.name)
  else:
   dst.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(src,dst)
+
+def overlay_checksums(repo:Path)->dict[str,str]:
+ out={}
+ for name in OVERLAY_DIRS:
+  base=repo/name
+  if not base.exists():continue
+  for p in sorted(base.rglob('*')):
+   if not p.is_file() or any(x in {'__pycache__','.pytest_cache','.git'} for x in p.parts) or p.name=='.DS_Store' or p.suffix=='.pyc':continue
+   out[p.relative_to(repo).as_posix()]=sha(p)
+ for name in ROOT_OVERLAY_FILES:
+  p=repo/name
+  if p.is_file():out[p.relative_to(repo).as_posix()]=sha(p)
+ return out
 
 def executable(p:Path):p.chmod(p.stat().st_mode|stat.S_IXUSR|stat.S_IXGRP|stat.S_IXOTH)
 
@@ -59,7 +73,7 @@ def plist(path:Path):
  d={'CFBundleName':'Instalar Binario IA R27 UAT','CFBundleDisplayName':'Instalar Binario IA R27 UAT','CFBundleIdentifier':'com.sistemabinario.binarioia.r27.uat.installer','CFBundleVersion':'27.0.0','CFBundleShortVersionString':'0.27.0-uat','CFBundlePackageType':'APPL','CFBundleExecutable':'launch','LSMinimumSystemVersion':'12.0'}
  with path.open('wb') as f:plistlib.dump(d,f,sort_keys=True)
 
-def meta(source_sha):return {'schema':'sbia-r27-uat-build-1.0','product':'Binario IA','version':'0.27.0','cycle':'R27','channel':'uat','source_repository':'arendon7/BINARIOIA','source_sha':source_sha,'baseline_sha256':BASE_SHA,'install_target':'~/Applications/Binario IA R27 UAT','stable_install_preserved':'~/Applications/Binario IA R26 FULL','projects_preserved':'~/Documents/Binario IA/Projects','shared_runtime':'~/Library/Application Support/Binario IA/runtime/v2','release_status':'UAT_ONLY_PENDING_PHYSICAL_MAC_SMOKE'}
+def meta(source_sha,overlay):return {'schema':'sbia-r27-uat-build-1.1','product':'Binario IA','version':'0.27.0','cycle':'R27','channel':'uat','source_repository':'arendon7/BINARIOIA','source_sha':source_sha,'baseline_sha256':BASE_SHA,'overlay_policy':'r26_certified_baseline_plus_sha256_attested_r27_files','overlay_checksums':overlay,'install_target':'~/Applications/Binario IA R27 UAT','stable_install_preserved':'~/Applications/Binario IA R26 FULL','projects_preserved':'~/Documents/Binario IA/Projects','shared_runtime':'~/Library/Application Support/Binario IA/runtime/v2','release_status':'UAT_ONLY_PENDING_PHYSICAL_MAC_SMOKE'}
 
 def zipdet(root:Path,out:Path):
  with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
@@ -71,21 +85,21 @@ def main():
  ap=argparse.ArgumentParser();ap.add_argument('--repo',type=Path,required=True);ap.add_argument('--baseline',type=Path,required=True);ap.add_argument('--dist',type=Path,required=True);ap.add_argument('--source-sha',required=True);a=ap.parse_args()
  repo=a.repo.resolve();base=a.baseline.resolve();dist=a.dist.resolve();dist.mkdir(parents=True,exist_ok=True)
  if sha(base)!=BASE_SHA:raise SystemExit('baseline SHA mismatch')
- templates=repo/'release'/'r27_uat'
+ templates=repo/'release'/'r27_uat';overlay=overlay_checksums(repo);build_meta=meta(a.source_sha,overlay)
  with tempfile.TemporaryDirectory(prefix='r27-uat-') as td:
   w=Path(td);zipfile.ZipFile(base).extractall(w);old=w/BASE_ROOT;root=w/OUT_ROOT;old.rename(root)
   (root/OLD_APP).rename(root/NEW_APP);(root/'payload'/OLD_PAYLOAD).rename(root/'payload'/NEW_PAYLOAD);payload=root/'payload'/NEW_PAYLOAD
   for n in OVERLAY_DIRS:merge(repo/n,payload/n)
-  for n in ('ABRIR_KNOWLEDGE_OBSIDIAN.command','EMPIEZA_AQUI.md','README.md'):merge(repo/n,payload/n)
+  for n in ROOT_OVERLAY_FILES:merge(repo/n,payload/n)
   for name in ('ABRIR_BINARIO_IA_R27.command','DESINSTALAR_BINARIO_IA_R27_UAT.command'):
    shutil.copy2(templates/name,payload/name);executable(payload/name)
   (payload/'ABRIR_BINARIO_IA.command').write_text('#!/bin/zsh\nROOT="$(cd "$(dirname "$0")" && pwd)"\nexec "$ROOT/ABRIR_BINARIO_IA_R27.command" "$@"\n');executable(payload/'ABRIR_BINARIO_IA.command')
   (payload/'ABRIR_BINARIO_IA_R26.command').write_text('#!/bin/zsh\n# Alias de compatibilidad del candidato R27 UAT.\nROOT="$(cd "$(dirname "$0")" && pwd)"\nexec "$ROOT/ABRIR_BINARIO_IA_R27.command" "$@"\n');executable(payload/'ABRIR_BINARIO_IA_R26.command')
-  (payload/'.release-blocked').write_text('R27 UAT: promoción a estable bloqueada únicamente hasta completar smoke físico en Mac.\nGates Git cumplidos: 12 Apps, source gate, gobernanza y regresión R27.\nPendiente físico: Hub, Video Studio, FFmpeg y Whisper end-to-end.\n')
-  (payload/'R27_UAT_BUILD.json').write_text(json.dumps(meta(a.source_sha),indent=2,ensure_ascii=False))
+  (payload/'.release-blocked').write_text('R27 UAT: promoción a estable bloqueada únicamente hasta completar smoke físico en Mac.\nGates de código: fuente R27 + baseline R26 certificada + overlay SHA-256.\nPendiente físico: Hub, Video Studio, FFmpeg y Whisper end-to-end.\n')
+  (payload/'R27_UAT_BUILD.json').write_text(json.dumps(build_meta,indent=2,ensure_ascii=False),encoding='utf-8')
   patch_installer(root/'installer'/'install_standalone.py')
   shutil.copy2(templates/CMD,root/CMD);executable(root/CMD)
-  (root/'R27_UAT_BUILD.json').write_text(json.dumps(meta(a.source_sha),indent=2,ensure_ascii=False))
+  (root/'R27_UAT_BUILD.json').write_text(json.dumps(build_meta,indent=2,ensure_ascii=False),encoding='utf-8')
   (root/'ABRE_ESTE_ARCHIVO.txt').write_text('BINARIO IA v0.27.0 · R27 FULL MAC UAT\n\n1. Descomprime el ZIP completo.\n2. Abre: INSTALAR BINARIO IA R27 UAT.app\n3. Se instala al lado de R26; no lo reemplaza.\n4. Se preservan ~/Documents/Binario IA/Projects.\n5. Prueba Inicio → Video Studio → Importar → Transcribir → Clips → Renderizar.\n6. Ejecuta Probar Whisper en Inicio.\n7. UAT no es estable hasta superar el smoke físico.\n')
   app=root/NEW_APP;resources=app/'Contents'/'Resources'/'package';shutil.rmtree(resources);resources.mkdir(parents=True)
   merge(root/'installer',resources/'installer');merge(root/'payload',resources/'payload');shutil.copy2(root/CMD,resources/CMD);executable(resources/CMD)
@@ -96,7 +110,7 @@ def main():
   required=[payload/'apps'/'11_documentos_ia',payload/'hub'/'server.py',payload/'runtime'/'runtime_manager.py',payload/'runtime'/'whisper_gateway.py',payload/'runtime'/'whisper_selftest.py',payload/'config'/'apps.json',payload/'scripts'/'verify_all.py',payload/'r26'/'r26_video_studio'/'video-studio.js',payload/'ABRIR_BINARIO_IA_R27.command',root/'installer'/'install_standalone.py',app/'Contents'/'MacOS'/'launch',resources/'payload'/NEW_PAYLOAD/'runtime'/'whisper_gateway.py']
   miss=[str(p.relative_to(root)) for p in required if not p.exists()]
   if miss:raise SystemExit('package incomplete: '+', '.join(miss))
-  out=dist/OUT_ZIP;zipdet(root,out);digest=sha(out);(dist/(OUT_ZIP+'.sha256.txt')).write_text(f'{digest}  {OUT_ZIP}\n');print(json.dumps({'ok':True,'artifact':str(out),'sha256':digest},indent=2))
+  out=dist/OUT_ZIP;zipdet(root,out);digest=sha(out);(dist/(OUT_ZIP+'.sha256.txt')).write_text(f'{digest}  {OUT_ZIP}\n');print(json.dumps({'ok':True,'artifact':str(out),'sha256':digest,'overlay_files':len(overlay)},indent=2))
  return 0
 
 if __name__=='__main__':raise SystemExit(main())
