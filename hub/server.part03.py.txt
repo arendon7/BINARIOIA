@@ -12,6 +12,11 @@
                 from common.version_center import overview
                 return self._json(overview(manifests()))
             except Exception as exc:return self._json({"error":str(exc)},500)
+        if path=="/api/product-reconciliation":
+            try:
+                from common.product_reconciliation import audit
+                return self._json(audit(ROOT))
+            except Exception as exc:return self._json({"error":str(exc)},500)
         if path=="/api/product-audit":
             try:
                 from common.product_audit import product_audit
@@ -33,139 +38,3 @@
             from runtime.whisper_jobs import get as whisper_job_get
             return self._json(whisper_job_get(query.get("job_id") or None))
         if path=="/api/ai":
-            from common.ai_gateway import overview
-            return self._json(overview([a.get("id") for a in manifests()]))
-        if path=="/api/ai/catalog":
-            from common.ai_catalog import public_catalog
-            return self._json(public_catalog([a.get("id") for a in manifests()]))
-        if path=="/api/ai/adoption":
-            from common import ai_adoption
-            return self._json(ai_adoption.overview([a.get("id") for a in manifests()]))
-        if path=="/api/runtime/catalog":
-            try:
-                from runtime.runtime_manager import catalog
-                return self._json(catalog(ROOT))
-            except Exception as exc:return self._json({"error":str(exc)},500)
-        if path=="/api/workspaces":
-            from common.workspace_store import list_workspaces
-            return self._json(list_workspaces())
-        if path.startswith("/api/workspaces/") and path.endswith("/export"):
-            from common.workspace_bundle import export_workspace
-            wid=path.split("/")[3]
-            try:return self._json(export_workspace(wid))
-            except Exception as exc:return self._json({"error":str(exc)},400)
-        if path.startswith("/api/workspaces/") and path.endswith("/export/portable"):
-            from common.workspace_bundle import export_portable_workspace
-            wid=path.split("/")[3]
-            try:return self._json(export_portable_workspace(wid))
-            except Exception as exc:return self._json({"error":str(exc)},400)
-        if path.startswith("/api/workspaces/") and path.endswith("/sync-preview"):
-            from common.workspace_sync import preview
-            wid=path.split("/")[3]
-            try:return self._json(preview(wid))
-            except Exception as exc:return self._json({"error":str(exc)},400)
-        if path.startswith("/api/workspaces/"):
-            from common.workspace_store import get_workspace
-            wid=path.split("/")[3]
-            try:return self._json(get_workspace(wid))
-            except Exception as exc:return self._json({"error":str(exc)},404)
-        if path=="/api/runs":
-            from common.run_store import list_runs
-            return self._json(list_runs(query.get("workspace_id"),limit=int(query.get("limit","200"))))
-        if path=="/api/handoffs":
-            from common.handoff_store import list_handoffs
-            return self._json(list_handoffs(query.get("workspace_id")))
-        if path=="/api/knowledge":
-            from common.knowledge_store import list_items
-            return self._json(list_items(query.get("workspace_id"),query.get("status")))
-        if path=="/api/knowledge/events":
-            from common.knowledge_events import list_events
-            return self._json(list_events(query.get("workspace_id"),query.get("item_id"),int(query.get("limit","500"))))
-        if path=="/api/workflow/recipes":return self._json(workflow_list())
-        if path=="/api/workflow/instances":
-            from common.workflow_orchestrator import list_instances
-            return self._json(list_instances(query.get("workspace_id")))
-        if path.startswith("/api/workflow/instances/"):
-            from common.workflow_orchestrator import get_instance
-            iid=path.split("/")[4]
-            try:return self._json(get_instance(iid))
-            except Exception as exc:return self._json({"error":str(exc)},404)
-        if path=="/api/workflow/definitions":
-            from common.workflow_orchestrator import list_definitions
-            return self._json(list_definitions())
-        if path=="/api/decision-center":
-            from common.decision_center import build_decision_center
-            return self._json(build_decision_center(query.get("workspace_id")))
-        if path=="/api/app-factory/projects":
-            from common.app_factory_governance import list_governed_projects
-            return self._json(list_governed_projects())
-        if path=="/api/app-factory/templates":
-            from common.app_factory_governance import available_templates
-            return self._json(available_templates())
-        if path.startswith("/api/app-factory/projects/") and path.endswith("/status"):
-            from common.app_factory_governance import governed_status
-            pid=path.split("/")[4]
-            try:return self._json(governed_status(pid))
-            except Exception as exc:return self._json({"error":str(exc)},404)
-        if path.startswith("/api/app-factory/projects/") and path.endswith("/compare-current"):
-            from common.app_factory_governance import compare_to_current_definition
-            pid=path.split("/")[4]
-            try:return self._json(compare_to_current_definition(pid))
-            except Exception as exc:return self._json({"error":str(exc)},404)
-        if path=="/api/system/notifications":
-            from common.notifications_store import list_notifications, refresh_due_notifications
-            refresh_due_notifications()
-            return self._json(list_notifications(status=query.get("status"),limit=int(query.get("limit","120"))))
-        if path=="/api/system/schedules":
-            from common.scheduler_store import list_schedules
-            return self._json(list_schedules(workspace_id=query.get("workspace_id"),status=query.get("status")))
-        if path=="/api/system/analytics":
-            from common.analytics_store import analytics_summary
-            return self._json(analytics_summary(query.get("workspace_id")))
-        if path=="/api/system/recommendations":
-            from common.recommendation_engine import recommendations
-            return self._json(recommendations(query.get("workspace_id")))
-        if path=="/api/system/profiles":
-            from common.profile_store import list_profiles
-            return self._json(list_profiles(include_archived=query.get("include_archived")=="1"))
-        if path.startswith("/api/system/profiles/"):
-            from common.profile_store import get_profile
-            pid=path.split("/")[4]
-            try:return self._json(get_profile(pid))
-            except Exception as exc:return self._json({"error":str(exc)},404)
-        if path=="/api/system/routing":
-            from common.routing_store import overview
-            return self._json(overview())
-        if path=="/api/system/backup":
-            from common.backup_store import backup_summary
-            return self._json(backup_summary())
-        if path=="/api/system/backup/history":
-            from common.backup_store import backup_history
-            return self._json(backup_history(limit=int(query.get("limit","60"))))
-        if path=="/api/system/local-models":
-            from common.local_model_store import overview
-            return self._json(overview())
-        if path=="/api/system/telemetry":
-            from common.telemetry_store import telemetry_summary
-            return self._json(telemetry_summary(query.get("workspace_id")))
-        if path=="/api/system/capacity":
-            from common.capacity_planner import capacity_summary
-            return self._json(capacity_summary())
-        if path=="/api/system/audit":
-            from common.audit_log import list_events
-            return self._json(list_events(workspace_id=query.get("workspace_id"),limit=int(query.get("limit","160"))))
-        if path=="/api/system/plugin-catalog":
-            from common.plugin_catalog import list_plugins
-            return self._json(list_plugins(enabled_only=query.get("enabled_only")=="1"))
-        if path=="/api/system/policies":
-            from common.policy_store import overview
-            return self._json(overview())
-        if path=="/api/system/privacy":
-            from common.privacy_store import overview
-            return self._json(overview())
-        if path=="/api/system/usage":
-            from common.usage_meter import usage_summary
-            return self._json(usage_summary(query.get("workspace_id")))
-        if path=="/api/system/costs":
-            from common.cost_tracker import cost_summary
-            return self._json(cost_summary(query.get("workspace_id")))
