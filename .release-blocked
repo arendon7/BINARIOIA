@@ -1,11 +1,19 @@
-R27 release bloqueado.
+R27 stable release remains blocked.
 
-Motivo: el árbol fuente R26 completo todavía no está importado físicamente en Git.
-Tracking: https://github.com/arendon7/BINARIOIA/issues/4
+SOURCE CUSTODY: COMPLETE
+- Tracking issue #4 is closed as completed.
+- Certified R26 source snapshot: 1,617/1,617 source paths present in Git.
+- Certified source snapshot SHA-256: b854a8316ecc1003ea9f2806ceb9dea229c9f276f881b942dad3dc2c46e30f87
+- Certified R26 FULL MAC artifact SHA-256: 87b36e06e896fbbb07309e9947a4113771515cb534cfa6e525446b7a21f97c46
 
-No eliminar este archivo hasta que:
-- existan las 12 Apps en el repo,
-- common/hub/runtime/r26/tests/config estén presentes,
-- release_gate.py dé PASS,
-- regresión histórica y R27 den PASS,
-- se haga smoke Mac real de Hub, Video, FFmpeg y Whisper.
+DO NOT REMOVE THIS FILE until the exact R27 release candidate completes all remaining release gates:
+- R27 regression/development gates PASS on the exact candidate source;
+- physical Mac UAT PASS per docs/R27_MAC_UAT.md;
+- launcher -> canonical Hub -> project continuity PASS;
+- Finder confirms canonical Project Storage and non-destructive legacy migration;
+- APP05 real video import/render PASS with FFmpeg and VideoToolbox/fallback behavior verified;
+- Whisper self-test and a real transcription PASS with native worker architecture verified;
+- provider/model + Keychain flow PASS without secrets in project/JSON;
+- no blocking data-loss, credential, launcher, project, Video, Whisper or render defect remains.
+
+Release unblocking and promotion to main must be a separate, evidence-backed change after the physical Mac UAT. Do not infer PASS from source tests alone.
