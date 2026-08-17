@@ -13,6 +13,7 @@ CMD='INSTALAR_BINARIO_IA_R27_FULL_MAC_UAT.command'
 OVERLAY_DIRS=('apps','common','hub','r26','runtime','config','scripts','tests','docs')
 ROOT_OVERLAY_FILES=('ABRIR_BINARIO_IA.command','ABRIR_BINARIO_IA_R26.command','ABRIR_KNOWLEDGE_OBSIDIAN.command','EMPIEZA_AQUI.md','README.md')
 CHECKSUM_PREFIXES=('apps','common','hub','runtime','workflow','config','scripts')
+UAT_COMMANDS=('ABRIR_BINARIO_IA_R27.command','DESINSTALAR_BINARIO_IA_R27_UAT.command','EJECUTAR_UAT_R27_MAC.command')
 
 def sha(path:Path)->str:
  h=hashlib.sha256()
@@ -106,25 +107,25 @@ def main():
   (root/OLD_APP).rename(root/NEW_APP);(root/'payload'/OLD_PAYLOAD).rename(root/'payload'/NEW_PAYLOAD);payload=root/'payload'/NEW_PAYLOAD
   for n in OVERLAY_DIRS:merge(repo/n,payload/n)
   for n in ROOT_OVERLAY_FILES:merge(repo/n,payload/n)
-  for name in ('ABRIR_BINARIO_IA_R27.command','DESINSTALAR_BINARIO_IA_R27_UAT.command'):
+  for name in UAT_COMMANDS:
    shutil.copy2(templates/name,payload/name);executable(payload/name)
-  for name in ('ABRIR_BINARIO_IA.command','ABRIR_BINARIO_IA_R26.command','ABRIR_BINARIO_IA_R27.command','DESINSTALAR_BINARIO_IA_R27_UAT.command'):
+  for name in ('ABRIR_BINARIO_IA.command','ABRIR_BINARIO_IA_R26.command',*UAT_COMMANDS):
    p=payload/name
    if p.exists():executable(p)
-  (payload/'.release-blocked').write_text('R27 UAT: promoción a estable bloqueada únicamente hasta completar smoke físico en Mac.\nGates de código: fuente R27 + baseline R26 certificada + overlay SHA-256.\nPendiente físico: Hub, Video Studio, FFmpeg y Whisper end-to-end.\n')
+  (payload/'.release-blocked').write_text('R27 UAT: promoción a estable bloqueada únicamente hasta completar smoke físico en Mac.\nGates de código: fuente R27 + baseline R26 certificada + overlay SHA-256.\nPendiente físico: Hub, Project Storage/Finder, Video Studio, FFmpeg y Whisper end-to-end.\n')
   checks=write_package_checksums(payload);build_meta['certified_payload_files']=checks
   (payload/'R27_UAT_BUILD.json').write_text(json.dumps(build_meta,indent=2,ensure_ascii=False),encoding='utf-8')
   patch_installer(root/'installer'/'install_standalone.py')
   shutil.copy2(templates/CMD,root/CMD);executable(root/CMD)
   (root/'R27_UAT_BUILD.json').write_text(json.dumps(build_meta,indent=2,ensure_ascii=False),encoding='utf-8')
-  (root/'ABRE_ESTE_ARCHIVO.txt').write_text('BINARIO IA v0.27.0 · R27 FULL MAC UAT\n\n1. Descomprime el ZIP completo.\n2. Abre: INSTALAR BINARIO IA R27 UAT.app\n3. Se instala al lado de R26; no lo reemplaza.\n4. Se preservan ~/Documents/Binario IA/Projects.\n5. Prueba Inicio → Video Studio → Importar → Transcribir → Clips → Renderizar.\n6. Ejecuta Probar Whisper en Inicio.\n7. UAT no es estable hasta superar el smoke físico.\n')
+  (root/'ABRE_ESTE_ARCHIVO.txt').write_text('BINARIO IA v0.27.0 · R27 FULL MAC UAT\n\n1. Descomprime el ZIP completo.\n2. Abre: INSTALAR BINARIO IA R27 UAT.app\n3. Se instala al lado de R26; no lo reemplaza.\n4. Se preservan ~/Documents/Binario IA/Projects.\n5. Ejecuta EJECUTAR_UAT_R27_MAC.command dentro de la instalación para generar evidencia automática.\n6. Prueba Inicio → Video Studio → Importar → Transcribir → Clips → Renderizar.\n7. Completa los gates manuales listados en el reporte generado en el Escritorio.\n8. UAT no es estable hasta superar todo el smoke físico.\n')
   app=root/NEW_APP;resources=app/'Contents'/'Resources'/'package';shutil.rmtree(resources);resources.mkdir(parents=True)
   merge(root/'installer',resources/'installer');merge(root/'payload',resources/'payload');shutil.copy2(root/CMD,resources/CMD);executable(resources/CMD)
   shutil.copy2(templates/'installer_app_launch.command',app/'Contents'/'MacOS'/'launch');executable(app/'Contents'/'MacOS'/'launch');plist(app/'Contents'/'Info.plist')
   for legacy in ('INSTALAR_BINARIO_IA_R26_FULL_MAC.command','INSTALAR_BINARIO_IA_v0.25.1-a1_FULL_MAC.command'):
    p=root/legacy
    if p.exists():p.unlink()
-  required=[payload/'apps'/'11_documentos_ia',payload/'hub'/'server.py',payload/'runtime'/'runtime_manager.py',payload/'runtime'/'whisper_gateway.py',payload/'runtime'/'whisper_selftest.py',payload/'config'/'apps.json',payload/'scripts'/'verify_all.py',payload/'r26'/'r26_video_studio'/'video-studio.js',payload/'ABRIR_BINARIO_IA_R27.command',root/'installer'/'install_standalone.py',app/'Contents'/'MacOS'/'launch',resources/'payload'/NEW_PAYLOAD/'runtime'/'whisper_gateway.py']
+  required=[payload/'apps'/'11_documentos_ia',payload/'hub'/'server.py',payload/'runtime'/'runtime_manager.py',payload/'runtime'/'whisper_gateway.py',payload/'runtime'/'whisper_selftest.py',payload/'config'/'apps.json',payload/'scripts'/'verify_all.py',payload/'scripts'/'r27_mac_uat_evidence.py',payload/'r26'/'r26_video_studio'/'video-studio.js',payload/'ABRIR_BINARIO_IA_R27.command',payload/'EJECUTAR_UAT_R27_MAC.command',root/'installer'/'install_standalone.py',app/'Contents'/'MacOS'/'launch',resources/'payload'/NEW_PAYLOAD/'runtime'/'whisper_gateway.py']
   miss=[str(p.relative_to(root)) for p in required if not p.exists()]
   if miss:raise SystemExit('package incomplete: '+', '.join(miss))
   out=dist/OUT_ZIP;zipdet(root,out);digest=sha(out);(dist/(OUT_ZIP+'.sha256.txt')).write_text(f'{digest}  {OUT_ZIP}\n');print(json.dumps({'ok':True,'artifact':str(out),'sha256':digest,'overlay_files':len(overlay),'certified_payload_files':checks},indent=2))
