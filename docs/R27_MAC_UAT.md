@@ -1,6 +1,15 @@
 # R27 · Mac UAT Gate
 
-R27 no se publica hasta ejecutar este UAT sobre un Mac real.
+R27 no se publica hasta ejecutar este UAT sobre un Mac real y conservar evidencia del candidato exacto.
+
+## 0. Evidencia automática primero
+- Instalar el candidato R27 FULL MAC UAT.
+- Ejecutar `EJECUTAR_UAT_R27_MAC.command` dentro de `~/Applications/Binario IA R27 UAT`.
+- El comando ejecuta preflight de plataforma/runtime, provenance `source_sha`, launcher/Hub, Project Storage, FFmpeg/FFprobe, capacidad VideoToolbox, Whisper `say → audio → transcripción` y presencia de credenciales en Keychain sin leer sus valores.
+- Conserva en el Escritorio `r27-mac-uat-evidence.json` y `r27-mac-uat-evidence.md`.
+- `PRECHECK_FAIL` bloquea inmediatamente.
+- `PRECHECK_PASS_MANUAL_PENDING` permite continuar con los pasos manuales, pero **no** autoriza release.
+- El reporte nunca elimina `.release-blocked` automáticamente.
 
 ## Entrada y navegación
 - Abrir Binario IA desde un único launcher.
@@ -28,8 +37,8 @@ R27 no se publica hasta ejecutar este UAT sobre un Mac real.
 ## Whisper
 - Estado inicial visible en Inicio.
 - Preparar/reparar sin congelar la UI.
-- Ejecutar `Probar Whisper`: `say → audio → transcripción`.
-- Transcribir un audio/video real corto del usuario.
+- Confirmar en el reporte que `Probar Whisper` automático pasó: `say → audio → transcripción`.
+- Transcribir además un audio/video real corto del usuario.
 - Confirmar arquitectura nativa del worker.
 - Forzar/observar un fallo de Whisper y comprobar que edición/render siguen funcionando.
 
@@ -42,4 +51,8 @@ R27 no se publica hasta ejecutar este UAT sobre un Mac real.
 
 ## Criterio de aprobación
 
-Todos los pasos críticos deben ser PASS. Los defectos visuales menores pueden entrar como deuda explícita; fallos de launcher, proyecto, Video, Whisper, render, pérdida de datos o credenciales bloquean release.
+Todos los checks automáticos deben estar `PASS` y todos los gates manuales deben quedar verificados sobre el mismo `source_sha` registrado en `R27_UAT_BUILD.json`.
+
+Los defectos visuales menores pueden entrar como deuda explícita; fallos de provenance, launcher, proyecto, Video, Whisper, render, pérdida de datos o credenciales bloquean release.
+
+Solo después de esta evidencia puede abrirse un cambio separado para retirar `.release-blocked` y promover R27; nunca como efecto automático del preflight.
