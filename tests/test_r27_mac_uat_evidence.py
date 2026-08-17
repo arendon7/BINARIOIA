@@ -67,6 +67,14 @@ class R27MacUATEvidenceTests(unittest.TestCase):
         self.assertIn(".release-blocked", text)
         self.assertIn("video_real_render", text)
 
+    def test_builder_compiles_and_packages_evidence_command(self):
+        repo = Path(__file__).resolve().parents[1]
+        builder = repo / "scripts" / "build_r27_uat.py"
+        source = builder.read_text(encoding="utf-8")
+        compile(source, str(builder), "exec")
+        self.assertIn("EJECUTAR_UAT_R27_MAC.command", source)
+        self.assertIn("r27_mac_uat_evidence.py", source)
+
 
 if __name__ == "__main__":
     unittest.main()
